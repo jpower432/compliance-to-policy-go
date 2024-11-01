@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package protocols;
+option go_package = "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1/";
+
+import "api/proto/v1alpha1/models.proto";
+
+message Empty {}
+
+message GetSchemaResponse{
+  bytes json_schema = 1;
+}
+
+message ConfigureRequest{
+  bytes config = 1;
+}
+
+
+message ConfigureResponse {
+  string error = 1;
+}
+
+message RemediationRequest{
+  repeated protocols.Finding findings = 1;
+}
+
+message RemediationResponse{
+  string error = 1;
+}
+
+message GenerateRequest {
+  protocols.Policy policy = 1;
+}
+
+message GenerateResponse {
+  string error = 1;
+}
+
+message ResultsResponse {
+  protocols.PVPResult result = 1;
+  string error = 2;
+}
+
+
