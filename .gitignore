@@ -41,3 +41,6 @@ policy-collection
 out
 work
 kubeconfig.*
+
+**/vendor
+**/bin
