@@ -2,21 +2,31 @@ package main
 
 import (
 	"fmt"
+
 	"os"
 	"os/exec"
 
-	"github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-hclog"
+	hplugin "github.com/hashicorp/go-plugin"
 
-	shared "github.com/oscal-compass/compliance-to-policy/v2/plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 func run() error {
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: shared.Handshake,
-		Plugins:         shared.PluginMap,
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "plugin",
+		Output: os.Stdout,
+		Level:  hclog.Info,
+	})
+
+	client := hplugin.NewClient(&hplugin.ClientConfig{
+		HandshakeConfig: plugin.Handshake,
+		Plugins:         plugin.Map,
 		Cmd:             exec.Command("sh", "-c", os.Getenv("PVP_PLUGIN")),
-		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger:          logger,
+		AllowedProtocols: []hplugin.Protocol{
+			hplugin.ProtocolNetRPC, hplugin.ProtocolGRPC},
 	})
 	defer client.Kill()
 
@@ -27,24 +37,37 @@ func run() error {
 	}
 
 	// Request the plugin
-	raw, err := rpcClient.Dispense("pvp")
+	raw, err := rpcClient.Dispense(plugin.PVPPluginName)
 	if err != nil {
 		return err
 	}
 
-	pvp := raw.(shared.PolicyEngine)
+	pvp := raw.(policy.Engine)
 	os.Args = os.Args[1:]
 	switch os.Args[0] {
 	case "generate":
-		err := pvp.Generate()
+		err := pvp.Generate(policy.Policy{
+			Rules: []policy.RuleObject{
+				policy.RuleObject{
+					RuleId:               "some-id",
+					RuleDescription:      "some description",
+					PolicyId:             "some-id",
+					ParameterId:          "some-id",
+					ParameterDescription: "some description",
+				},
+			},
+		})
 		if err != nil {
 			return err
 		}
 
 	case "scan":
-		err := pvp.GetResults()
+		results, err := pvp.GetResults()
 		if err != nil {
 			return err
+		}
+		for _, result := range results.Observations {
+			fmt.Println(result.Description)
 		}
 
 	default:

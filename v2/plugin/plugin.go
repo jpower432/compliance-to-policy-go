@@ -3,25 +3,11 @@ package plugin
 import (
 	"context"
 	"github.com/hashicorp/go-plugin"
-	proto "github.com/oscal-compass/compliance-to-policy/v2/api/proto/v1alpha1"
+	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/remediation"
 	"google.golang.org/grpc"
 )
-
-// PolicyEngine defines methods for a policy validation engine
-type PolicyEngine interface {
-	GetSchema() error
-	UpdateConfiguration() error
-	Generate() error
-	GetResults() error
-}
-
-// RemediationEngine defines methods for a remediation engine
-type RemediationEngine interface {
-	GetSchema() error
-	UpdateConfiguration() error
-	Generate() error
-	Remediate() error
-}
 
 // Handshake is a common handshake that is shared by plugin and host.
 var Handshake = plugin.HandshakeConfig{
@@ -31,18 +17,28 @@ var Handshake = plugin.HandshakeConfig{
 	MagicCookieValue: "hello",
 }
 
-// PluginMap is the map of plugins we can dispense.
-var PluginMap = map[string]plugin.Plugin{
-	"pvp":         &PVPPlugin{},
-	"remediation": &RemediationPlugin{},
+const (
+	// PVPPluginName is used to dispense a policy plugin type
+	PVPPluginName = "pvp"
+	// RemediationPluginName is used to dispense a remediation plugin type
+	RemediationPluginName = "remediation"
+)
+
+// Map is the map of plugins we can dispense.
+var Map = map[string]plugin.Plugin{
+	PVPPluginName:         &PVPPlugin{},
+	RemediationPluginName: &RemediationPlugin{},
 }
 
 var _ plugin.GRPCPlugin = &PVPPlugin{}
 var _ plugin.GRPCPlugin = &RemediationPlugin{}
 
+// Below types are only used for plugins that are written in Go.
+
+// PVPPlugin is concrete implementation of the policy Engine written in Go.
 type PVPPlugin struct {
 	plugin.Plugin
-	Impl PolicyEngine
+	Impl policy.Engine
 }
 
 func (p *PVPPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
@@ -54,9 +50,10 @@ func (p *PVPPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c
 	return &pvpClient{client: proto.NewPolicyEngineClient(c)}, nil
 }
 
+// RemediationPlugin is concrete implementation of the remediation Engine written in Go.
 type RemediationPlugin struct {
 	plugin.Plugin
-	Impl RemediationEngine
+	Impl remediation.Engine
 }
 
 func (p *RemediationPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
