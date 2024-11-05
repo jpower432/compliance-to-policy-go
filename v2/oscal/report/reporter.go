@@ -1,4 +1,4 @@
-package reporter
+package report
 
 type Reporter struct {
 }

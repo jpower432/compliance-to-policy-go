@@ -2,12 +2,13 @@ package plugin
 
 import (
 	"context"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/codes"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 // Plugin must return an RPC server for this plugin type.
@@ -15,10 +16,10 @@ var _ proto.PolicyEngineServer = &pvpService{}
 
 type pvpService struct {
 	proto.UnimplementedPolicyEngineServer
-	Impl policy.Engine
+	Impl policy.Provider
 }
 
-func FromPVP(pe policy.Engine) proto.PolicyEngineServer {
+func FromPVP(pe policy.Provider) proto.PolicyEngineServer {
 	return &pvpService{
 		Impl: pe,
 	}
@@ -46,8 +47,8 @@ func (p *pvpService) Generate(
 	ctx context.Context,
 	request *proto.GenerateRequest) (*proto.GenerateResponse, error) {
 
-	rules := policy.RulesFromProto(request.GetPolicy())
-	if err := p.Impl.Generate(rules); err != nil {
+	policies := rules.FromProto(request.GetPolicy())
+	if err := p.Impl.Generate(policies); err != nil {
 		return &proto.GenerateResponse{Error: "I have errored"}, status.Error(codes.Internal, err.Error())
 	}
 

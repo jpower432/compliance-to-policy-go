@@ -11,10 +11,10 @@ var _ proto.RemediationEngineServer = &remediationService{}
 
 type remediationService struct {
 	proto.UnimplementedRemediationEngineServer
-	Impl remediation.Engine
+	Impl remediation.Provider
 }
 
-func FromRemediation(rm remediation.Engine) proto.RemediationEngineServer {
+func FromRemediation(rm remediation.Provider) proto.RemediationEngineServer {
 	return &remediationService{
 		Impl: rm,
 	}

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 
 	"os"
 	"os/exec"
@@ -10,7 +12,6 @@ import (
 	hplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 func run() error {
@@ -42,18 +43,16 @@ func run() error {
 		return err
 	}
 
-	pvp := raw.(policy.Engine)
+	pvp := raw.(policy.Provider)
 	os.Args = os.Args[1:]
 	switch os.Args[0] {
 	case "generate":
-		err := pvp.Generate(policy.Policy{
-			Rules: []policy.RuleObject{
-				policy.RuleObject{
-					RuleId:               "some-id",
-					RuleDescription:      "some description",
-					PolicyId:             "some-id",
-					ParameterId:          "some-id",
-					ParameterDescription: "some description",
+		err := pvp.Generate(rules.Policy{
+			RuleSets: []*rules.RuleSet{
+				&rules.RuleSet{
+					RuleID:          "some-id",
+					RuleDescription: "some description",
+					CheckID:         "some-id",
 				},
 			},
 		})
@@ -66,8 +65,11 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		for _, result := range results.Observations {
-			fmt.Println(result.Description)
+		for _, result := range results.ObservationsByCheck {
+			fmt.Printf(fmt.Sprintf("Result %s processed\n", result.Title))
+			for _, s := range result.Subjects {
+				fmt.Printf("Subject %s result\n", s.Result.String())
+			}
 		}
 
 	default:

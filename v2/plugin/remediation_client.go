@@ -8,7 +8,7 @@ import (
 
 // Client must return an implementation of the corresponding interface that communicates
 // over an RPC client.
-var _ remediation.Engine = &remediationClient{}
+var _ remediation.Provider = &remediationClient{}
 
 type remediationClient struct {
 	client proto.RemediationEngineClient

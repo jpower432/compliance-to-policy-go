@@ -35,10 +35,10 @@ var _ plugin.GRPCPlugin = &RemediationPlugin{}
 
 // Below types are only used for plugins that are written in Go.
 
-// PVPPlugin is concrete implementation of the policy Engine written in Go.
+// PVPPlugin is concrete implementation of the policy Provider written in Go.
 type PVPPlugin struct {
 	plugin.Plugin
-	Impl policy.Engine
+	Impl policy.Provider
 }
 
 func (p *PVPPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
@@ -50,10 +50,10 @@ func (p *PVPPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c
 	return &pvpClient{client: proto.NewPolicyEngineClient(c)}, nil
 }
 
-// RemediationPlugin is concrete implementation of the remediation Engine written in Go.
+// RemediationPlugin is concrete implementation of the remediation Provider written in Go.
 type RemediationPlugin struct {
 	plugin.Plugin
-	Impl remediation.Engine
+	Impl remediation.Provider
 }
 
 func (p *RemediationPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
