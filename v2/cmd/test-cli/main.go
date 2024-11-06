@@ -1,17 +1,20 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
-
 	"os"
 	"os/exec"
 
 	"github.com/hashicorp/go-hclog"
 	hplugin "github.com/hashicorp/go-plugin"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/report"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 func run() error {
@@ -65,11 +68,22 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		for _, result := range results.ObservationsByCheck {
-			fmt.Printf(fmt.Sprintf("Result %s processed\n", result.Title))
-			for _, s := range result.Subjects {
-				fmt.Printf("Subject %s result\n", s.Result.String())
-			}
+		reporter := report.New(plan.Decomposer{})
+		assessmentResult, err := reporter.ToOSCAL(results)
+		if err != nil {
+			return err
+		}
+
+		var b bytes.Buffer
+		jsonEncoder := json.NewEncoder(&b)
+		jsonEncoder.SetIndent("", "  ")
+
+		if err := jsonEncoder.Encode(assessmentResult); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile("./assessment-results.json", b.Bytes(), 0600); err != nil {
+			return err
 		}
 
 	default:
