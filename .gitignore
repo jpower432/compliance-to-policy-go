@@ -44,3 +44,5 @@ kubeconfig.*
 
 **/vendor
 **/bin
+
+assessment-results.json

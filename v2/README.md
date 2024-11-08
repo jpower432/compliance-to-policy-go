@@ -10,7 +10,8 @@ make build
 ## Running
 
 ```bash
-export PVP_PLUGIN=./bin/test=plugin
+export PVP_PLUGIN=./bin/test-plugin
+export COMPDEF_PATH=./testdata/component-definition.template.json
 ./bin/test-cli generate
 ./bin/test-cli scan
 ```

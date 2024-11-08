@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan/rulefinder"
 	"os"
 	"os/exec"
 
+	oscalTypes_1_1_2 "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/hashicorp/go-hclog"
 	hplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/report"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
@@ -29,6 +31,7 @@ func run() error {
 		Plugins:         plugin.Map,
 		Cmd:             exec.Command("sh", "-c", os.Getenv("PVP_PLUGIN")),
 		Logger:          logger,
+		SyncStdout:      os.Stdout,
 		AllowedProtocols: []hplugin.Protocol{
 			hplugin.ProtocolNetRPC, hplugin.ProtocolGRPC},
 	})
@@ -46,20 +49,40 @@ func run() error {
 		return err
 	}
 
+	compDefPath := os.Getenv("COMPDEF_PATH")
+	compDefJSON, err := os.ReadFile(compDefPath)
+	if err != nil {
+		return err
+	}
+
+	var oscalModels oscalTypes_1_1_2.OscalModels
+	dec := json.NewDecoder(bytes.NewBuffer(compDefJSON))
+	dec.DisallowUnknownFields()
+	if err = dec.Decode(&oscalModels); err != nil {
+		return err
+	}
+
+	if oscalModels.ComponentDefinition == nil {
+		return fmt.Errorf("No component definition found in %s\n", os.Getenv("COMPDEF_PATH"))
+	}
+
+	ruleFinder, err := rulefinder.NewMemoryWithCD(*oscalModels.ComponentDefinition)
+	if err != nil {
+		return err
+	}
+	newPlan := plan.NewPlan(compDefPath, ruleFinder)
+
 	pvp := raw.(policy.Provider)
 	os.Args = os.Args[1:]
 	switch os.Args[0] {
 	case "generate":
-		err := pvp.Generate(rules.Policy{
-			RuleSets: []*rules.RuleSet{
-				&rules.RuleSet{
-					RuleID:          "some-id",
-					RuleDescription: "some description",
-					CheckID:         "some-id",
-				},
-			},
-		})
+
+		newPolicy, err := newPlan.GetPolicy()
 		if err != nil {
+			return err
+		}
+
+		if err := pvp.Generate(newPolicy); err != nil {
 			return err
 		}
 
@@ -68,7 +91,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		reporter := report.New(plan.Decomposer{})
+		reporter := report.New(newPlan)
 		assessmentResult, err := reporter.ToOSCAL(results)
 		if err != nil {
 			return err

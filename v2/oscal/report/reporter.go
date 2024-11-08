@@ -3,17 +3,15 @@ package report
 import (
 	"github.com/defenseunicorns/go-oscal/src/pkg/uuid"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/observations"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
 )
 
 type Reporter struct {
-	plan plan.Decomposer
+	plan *plan.Plan
 }
 
-func New(plan plan.Decomposer) *Reporter {
+func New(plan *plan.Plan) *Reporter {
 	return &Reporter{
 		plan: plan,
 	}
@@ -22,17 +20,17 @@ func New(plan plan.Decomposer) *Reporter {
 func (r *Reporter) ToOSCAL(results observations.PVPResult) (oscalTypes.AssessmentResults, error) {
 	arResult := oscalTypes.AssessmentResults{
 		ImportAp: oscalTypes.ImportAp{
-			Href: r.plan.Location(),
+			Href: r.plan.Location,
 		},
 	}
 	oscalObservations := make([]oscalTypes.Observation, 0)
 
 	for _, observation := range results.ObservationsByCheck {
-		ruleSet, err := r.plan.RuleSetByCheck(observation.CheckID)
+		ruleSet, err := r.plan.ByCheck(observation.CheckID)
 		if err != nil {
 			return arResult, err
 		}
-		oscalObservations = append(oscalObservations, r.toOSCALObservation(*observation, ruleSet))
+		oscalObservations = append(oscalObservations, r.toOSCALObservation(*observation, *ruleSet))
 	}
 
 	arResult.Results = []oscalTypes.Result{
@@ -43,7 +41,7 @@ func (r *Reporter) ToOSCAL(results observations.PVPResult) (oscalTypes.Assessmen
 	return arResult, nil
 }
 
-func (r *Reporter) toOSCALObservation(observationByCheck observations.ObservationByCheck, ruleSet rules.RuleSet) oscalTypes.Observation {
+func (r *Reporter) toOSCALObservation(observationByCheck observations.ObservationByCheck, ruleSet plan.RuleSet) oscalTypes.Observation {
 	subjects := make([]oscalTypes.SubjectReference, 0)
 	for _, subject := range observationByCheck.Subjects {
 		props := []oscalTypes.Property{
