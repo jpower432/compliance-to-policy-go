@@ -2,13 +2,13 @@ package plugin
 
 import (
 	"context"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/codes"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 // Plugin must return an RPC server for this plugin type.
@@ -47,7 +47,7 @@ func (p *pvpService) Generate(
 	ctx context.Context,
 	request *proto.GenerateRequest) (*proto.GenerateResponse, error) {
 
-	policies := rules.FromProto(request.GetPolicy())
+	policies := plan.FromProto(request.GetPolicy())
 	if err := p.Impl.Generate(policies); err != nil {
 		return &proto.GenerateResponse{Error: "I have errored"}, status.Error(codes.Internal, err.Error())
 	}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/observations"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
@@ -35,7 +35,7 @@ func (p *pvpClient) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (p *pvpClient) Generate(policy rules.Policy) error {
+func (p *pvpClient) Generate(policy plan.Policy) error {
 	request := &proto.GenerateRequest{
 		Policy: policy.ToProto(),
 	}

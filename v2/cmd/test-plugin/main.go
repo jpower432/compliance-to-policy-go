@@ -5,7 +5,7 @@ import (
 	"fmt"
 	hplugin "github.com/hashicorp/go-plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/observations"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/rules"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
@@ -23,7 +23,7 @@ func (p MyExamplePlugin) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (p MyExamplePlugin) Generate(rules rules.Policy) error {
+func (p MyExamplePlugin) Generate(rules plan.Policy) error {
 	fmt.Println("I have been generated")
 	return nil
 }
@@ -32,9 +32,11 @@ func (p MyExamplePlugin) GetResults() (observations.PVPResult, error) {
 	fmt.Println("I have been scanned")
 	return observations.PVPResult{
 		ObservationsByCheck: []*observations.ObservationByCheck{
-			&observations.ObservationByCheck{
+			{
 				Title:       "example",
 				Description: "example",
+				Methods:     []string{"AUTOMATED"},
+				CheckID:     "me",
 			},
 		},
 	}, nil
