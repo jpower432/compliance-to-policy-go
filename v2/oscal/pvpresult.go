@@ -1,18 +1,19 @@
-package observations
+package oscal
 
 import (
-	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+
+	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
 )
 
 type PVPResult struct {
-	ObservationsByCheck []*ObservationByCheck
-	Links               []*Link
+	ObservationsByCheck []ObservationByCheck
+	Links               []Link
 }
 
-func FromProto(pb *proto.PVPResult) PVPResult {
+func NewResultFromProto(pb *proto.PVPResult) PVPResult {
 	result := PVPResult{
-		ObservationsByCheck: make([]*ObservationByCheck, 0),
+		ObservationsByCheck: make([]ObservationByCheck, 0),
 	}
 
 	for _, o := range pb.Observations {
@@ -21,17 +22,18 @@ func FromProto(pb *proto.PVPResult) PVPResult {
 			Description: o.Description,
 			Methods:     o.Methods,
 			Collected:   o.CollectedAt.AsTime(),
+			CheckID:     o.CheckId,
 		}
-		links := make([]*Link, 0)
+		links := make([]Link, 0)
 		for _, ref := range o.EvidenceRefs {
-			link := &Link{Href: ref}
+			link := Link{Href: ref}
 			links = append(links, link)
 		}
 		observation.RelevantEvidences = links
 
-		subjects := make([]*Subject, 0)
+		subjects := make([]Subject, 0)
 		for _, s := range o.Subjects {
-			subject := &Subject{
+			subject := Subject{
 				Title:       s.Title,
 				ResourceID:  s.ResourceId,
 				Result:      resultByProto[s.Result],
@@ -41,7 +43,7 @@ func FromProto(pb *proto.PVPResult) PVPResult {
 			subjects = append(subjects, subject)
 		}
 		observation.Subjects = subjects
-		result.ObservationsByCheck = append(result.ObservationsByCheck, &observation)
+		result.ObservationsByCheck = append(result.ObservationsByCheck, observation)
 	}
 	return result
 }

@@ -1,23 +1,25 @@
-package report
+package oscal
 
 import (
+	"context"
+
 	"github.com/defenseunicorns/go-oscal/src/pkg/uuid"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/observations"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
+
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 )
 
 type Reporter struct {
-	plan *plan.Plan
+	plan *Plan
 }
 
-func New(plan *plan.Plan) *Reporter {
+func NewReporter(plan *Plan) *Reporter {
 	return &Reporter{
 		plan: plan,
 	}
 }
 
-func (r *Reporter) ToOSCAL(results observations.PVPResult) (oscalTypes.AssessmentResults, error) {
+func (r *Reporter) ToOSCAL(ctx context.Context, results []PVPResult) (oscalTypes.AssessmentResults, error) {
 	arResult := oscalTypes.AssessmentResults{
 		ImportAp: oscalTypes.ImportAp{
 			Href: r.plan.Location,
@@ -25,12 +27,14 @@ func (r *Reporter) ToOSCAL(results observations.PVPResult) (oscalTypes.Assessmen
 	}
 	oscalObservations := make([]oscalTypes.Observation, 0)
 
-	for _, observation := range results.ObservationsByCheck {
-		ruleSet, err := r.plan.ByCheck(observation.CheckID)
-		if err != nil {
-			return arResult, err
+	for _, result := range results {
+		for _, observation := range result.ObservationsByCheck {
+			rule, err := r.plan.GetByCheckID(ctx, observation.CheckID)
+			if err != nil {
+				return arResult, err
+			}
+			oscalObservations = append(oscalObservations, r.toOSCALObservation(observation, rule))
 		}
-		oscalObservations = append(oscalObservations, r.toOSCALObservation(*observation, *ruleSet))
 	}
 
 	arResult.Results = []oscalTypes.Result{
@@ -41,7 +45,7 @@ func (r *Reporter) ToOSCAL(results observations.PVPResult) (oscalTypes.Assessmen
 	return arResult, nil
 }
 
-func (r *Reporter) toOSCALObservation(observationByCheck observations.ObservationByCheck, ruleSet plan.RuleSet) oscalTypes.Observation {
+func (r *Reporter) toOSCALObservation(observationByCheck ObservationByCheck, ruleSet extensions.RuleSet) oscalTypes.Observation {
 	subjects := make([]oscalTypes.SubjectReference, 0)
 	for _, subject := range observationByCheck.Subjects {
 		props := []oscalTypes.Property{
@@ -86,7 +90,7 @@ func (r *Reporter) toOSCALObservation(observationByCheck observations.Observatio
 	props := []oscalTypes.Property{
 		{
 			Name:  "assessment-rule-id",
-			Value: ruleSet.RuleID,
+			Value: ruleSet.Rule.ID,
 		},
 	}
 

@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	PolicyEngine_GetSchema_FullMethodName           = "/protocols.PolicyEngine/GetSchema"
 	PolicyEngine_UpdateConfiguration_FullMethodName = "/protocols.PolicyEngine/UpdateConfiguration"
-	PolicyEngine_Generate_FullMethodName            = "/protocols.PolicyEngine/Generate"
 	PolicyEngine_GetResults_FullMethodName          = "/protocols.PolicyEngine/GetResults"
 )
 
@@ -31,7 +30,6 @@ const (
 type PolicyEngineClient interface {
 	GetSchema(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetSchemaResponse, error)
 	UpdateConfiguration(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
-	Generate(ctx context.Context, in *GenerateRequest, opts ...grpc.CallOption) (*GenerateResponse, error)
 	GetResults(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ResultsResponse, error)
 }
 
@@ -63,16 +61,6 @@ func (c *policyEngineClient) UpdateConfiguration(ctx context.Context, in *Config
 	return out, nil
 }
 
-func (c *policyEngineClient) Generate(ctx context.Context, in *GenerateRequest, opts ...grpc.CallOption) (*GenerateResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateResponse)
-	err := c.cc.Invoke(ctx, PolicyEngine_Generate_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *policyEngineClient) GetResults(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ResultsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResultsResponse)
@@ -89,7 +77,6 @@ func (c *policyEngineClient) GetResults(ctx context.Context, in *Empty, opts ...
 type PolicyEngineServer interface {
 	GetSchema(context.Context, *Empty) (*GetSchemaResponse, error)
 	UpdateConfiguration(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
-	Generate(context.Context, *GenerateRequest) (*GenerateResponse, error)
 	GetResults(context.Context, *Empty) (*ResultsResponse, error)
 	mustEmbedUnimplementedPolicyEngineServer()
 }
@@ -106,9 +93,6 @@ func (UnimplementedPolicyEngineServer) GetSchema(context.Context, *Empty) (*GetS
 }
 func (UnimplementedPolicyEngineServer) UpdateConfiguration(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfiguration not implemented")
-}
-func (UnimplementedPolicyEngineServer) Generate(context.Context, *GenerateRequest) (*GenerateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Generate not implemented")
 }
 func (UnimplementedPolicyEngineServer) GetResults(context.Context, *Empty) (*ResultsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetResults not implemented")
@@ -170,24 +154,6 @@ func _PolicyEngine_UpdateConfiguration_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PolicyEngine_Generate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PolicyEngineServer).Generate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PolicyEngine_Generate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PolicyEngineServer).Generate(ctx, req.(*GenerateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _PolicyEngine_GetResults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
@@ -220,10 +186,6 @@ var PolicyEngine_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateConfiguration",
 			Handler:    _PolicyEngine_UpdateConfiguration_Handler,
-		},
-		{
-			MethodName: "Generate",
-			Handler:    _PolicyEngine_Generate_Handler,
 		},
 		{
 			MethodName: "GetResults",

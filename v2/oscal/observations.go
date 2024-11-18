@@ -1,8 +1,9 @@
-package observations
+package oscal
 
 import (
-	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
 	"time"
+
+	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
 )
 
 // Result represents the kind of result statuses.
@@ -67,7 +68,7 @@ type Subject struct {
 	Result      Result
 	EvaluatedOn time.Time
 	Reason      string
-	Props       []*Property
+	Props       []Property
 }
 
 type ObservationByCheck struct {
@@ -75,8 +76,8 @@ type ObservationByCheck struct {
 	Description       string
 	CheckID           string
 	Methods           []string
-	Subjects          []*Subject
+	Subjects          []Subject
 	Collected         time.Time
-	RelevantEvidences []*Link
-	Props             []*Property
+	RelevantEvidences []Link
+	Props             []Property
 }

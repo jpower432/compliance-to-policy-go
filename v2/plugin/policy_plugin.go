@@ -2,13 +2,13 @@ package plugin
 
 import (
 	"context"
+
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/codes"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
 // Plugin must return an RPC server for this plugin type.
@@ -16,10 +16,10 @@ var _ proto.PolicyEngineServer = &pvpService{}
 
 type pvpService struct {
 	proto.UnimplementedPolicyEngineServer
-	Impl policy.Provider
+	Impl providers.PolicyProvider
 }
 
-func FromPVP(pe policy.Provider) proto.PolicyEngineServer {
+func FromPVP(pe providers.PolicyProvider) proto.PolicyEngineServer {
 	return &pvpService{
 		Impl: pe,
 	}
@@ -41,18 +41,6 @@ func (p *pvpService) UpdateConfiguration(ctx context.Context, request *proto.Con
 		return &proto.ConfigureResponse{}, status.Error(codes.Internal, err.Error())
 	}
 	return &proto.ConfigureResponse{}, nil
-}
-
-func (p *pvpService) Generate(
-	ctx context.Context,
-	request *proto.GenerateRequest) (*proto.GenerateResponse, error) {
-
-	policies := plan.FromProto(request.GetPolicy())
-	if err := p.Impl.Generate(policies); err != nil {
-		return &proto.GenerateResponse{Error: "I have errored"}, status.Error(codes.Internal, err.Error())
-	}
-
-	return &proto.GenerateResponse{Error: "This is a test"}, nil
 }
 
 func (p *pvpService) GetResults(

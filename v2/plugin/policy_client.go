@@ -3,15 +3,15 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/observations"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal/plan"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
 // Client must return an implementation of the corresponding interface that communicates
 // over an RPC client.
-var _ policy.Provider = &pvpClient{}
+var _ providers.PolicyProvider = &pvpClient{}
 
 type pvpClient struct {
 	client proto.PolicyEngineClient
@@ -35,22 +35,11 @@ func (p *pvpClient) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (p *pvpClient) Generate(policy plan.Policy) error {
-	request := &proto.GenerateRequest{
-		Policy: policy.ToProto(),
-	}
-	_, err := p.client.Generate(context.Background(), request)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *pvpClient) GetResults() (observations.PVPResult, error) {
+func (p *pvpClient) GetResults() (oscal.PVPResult, error) {
 	resp, err := p.client.GetResults(context.Background(), &proto.Empty{})
 	if err != nil {
-		return observations.PVPResult{}, err
+		return oscal.PVPResult{}, err
 	}
-	pvpResult := observations.FromProto(resp.Result)
+	pvpResult := oscal.NewResultFromProto(resp.Result)
 	return pvpResult, nil
 }

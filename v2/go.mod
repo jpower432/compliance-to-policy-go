@@ -1,13 +1,12 @@
 module github.com/oscal-compass/compliance-to-policy-go/v2
 
-go 1.22.3
-
-toolchain go1.22.7
+go 1.22.7
 
 require (
 	github.com/defenseunicorns/go-oscal v0.6.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.6.2
+	github.com/oscal-compass/oscal-sdk-go v0.0.0-00010101000000-000000000000
 	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.35.1
 )
@@ -25,3 +24,5 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 )
+
+replace github.com/oscal-compass/oscal-sdk-go => github.com/jpower432/oscal-sdk-go v0.0.0-20241118223408-5395967c8840

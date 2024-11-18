@@ -17,7 +17,7 @@
           {
             "name": "Rule_Id",
             "ns": "http://oscal-compass.github.io/compliance-trestle/schemas/oscal/cd",
-            "value": "etcd_cert_file",
+            "value": "etcd-data-permissions",
             "remarks": "rule_set_00"
           },
           {
@@ -206,7 +206,7 @@
       {
         "uuid": "701c70f1-482b-42b0-a419-9870158cd9e2",
         "type": "validation",
-        "title": "OSCO",
+        "title": "Example",
         "description": "OSCO",
         "props": [
           {

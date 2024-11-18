@@ -2,13 +2,14 @@ package plugin
 
 import (
 	"encoding/json"
+
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/remediation"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
 // Client must return an implementation of the corresponding interface that communicates
 // over an RPC client.
-var _ remediation.Provider = &remediationClient{}
+var _ providers.RemediationProvider = &remediationClient{}
 
 type remediationClient struct {
 	client proto.RemediationEngineClient

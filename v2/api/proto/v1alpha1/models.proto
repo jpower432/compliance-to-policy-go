@@ -30,7 +30,7 @@ message Rule {
   // description is the human-readable documentation for the technical rule
   string description = 2;
   // Check Mapped to rule
-  Check check = 4;
+  repeated Check checks = 4;
   // Parameter associated with Rule
   optional Parameter parameter = 5;
 }
