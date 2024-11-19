@@ -33,8 +33,9 @@ var SupportedPlugins = map[string]plugin.Plugin{
 	GenerationPluginName:  &GeneratorPlugin{},
 }
 
-var _ plugin.GRPCPlugin = &PVPPlugin{}
-var _ plugin.GRPCPlugin = &RemediationPlugin{}
+var _ plugin.GRPCPlugin = (*PVPPlugin)(nil)
+var _ plugin.GRPCPlugin = (*RemediationPlugin)(nil)
+var _ plugin.Plugin = (*GeneratorPlugin)(nil)
 
 // Below types are only used for plugins that are written in Go.
 

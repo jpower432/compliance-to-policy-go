@@ -11,8 +11,8 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
-var _ providers.PolicyProvider = &MyExamplePlugin{}
-var _ providers.GenerationProvider = &MyExamplePlugin{}
+var _ providers.PolicyProvider = (*MyExamplePlugin)(nil)
+var _ providers.GenerationProvider = (*MyExamplePlugin)(nil)
 
 type MyExamplePlugin struct{}
 

@@ -13,7 +13,7 @@ import (
 )
 
 // Plugin must return an RPC server for this plugin type.
-var _ proto.GenerationEngineServer = &generationService{}
+var _ proto.GenerationEngineServer = (*generationService)(nil)
 
 type generationService struct {
 	proto.UnimplementedGenerationEngineServer

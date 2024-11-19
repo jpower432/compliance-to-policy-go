@@ -11,7 +11,7 @@ import (
 
 // Client must return an implementation of the corresponding interface that communicates
 // over an RPC client.
-var _ providers.GenerationProvider = &generationClient{}
+var _ providers.GenerationProvider = (*generationClient)(nil)
 
 type generationClient struct {
 	client proto.GenerationEngineClient

@@ -11,7 +11,7 @@ import (
 
 // Client must return an implementation of the corresponding interface that communicates
 // over an RPC client.
-var _ providers.PolicyProvider = &pvpClient{}
+var _ providers.PolicyProvider = (*pvpClient)(nil)
 
 type pvpClient struct {
 	client proto.PolicyEngineClient

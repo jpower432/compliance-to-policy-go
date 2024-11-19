@@ -7,7 +7,7 @@ import (
 )
 
 // Result represents the kind of result statuses.
-type Result int
+type Result uint
 
 const (
 	ResultInvalid Result = iota

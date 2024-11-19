@@ -8,7 +8,7 @@ import (
 )
 
 // Plugin must return an RPC server for this plugin type.
-var _ proto.RemediationEngineServer = &remediationService{}
+var _ proto.RemediationEngineServer = (*remediationService)(nil)
 
 type remediationService struct {
 	proto.UnimplementedRemediationEngineServer

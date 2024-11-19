@@ -12,7 +12,7 @@ import (
 )
 
 // Plugin must return an RPC server for this plugin type.
-var _ proto.PolicyEngineServer = &pvpService{}
+var _ proto.PolicyEngineServer = (*pvpService)(nil)
 
 type pvpService struct {
 	proto.UnimplementedPolicyEngineServer
