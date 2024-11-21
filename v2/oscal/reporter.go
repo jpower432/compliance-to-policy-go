@@ -2,9 +2,13 @@ package oscal
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
 
 	"github.com/defenseunicorns/go-oscal/src/pkg/uuid"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
+	"github.com/oscal-compass/oscal-sdk-go/rules"
 
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 )
@@ -31,7 +35,10 @@ func (r *Reporter) ToOSCAL(ctx context.Context, results []PVPResult) (oscalTypes
 		for _, observation := range result.ObservationsByCheck {
 			rule, err := r.plan.GetByCheckID(ctx, observation.CheckID)
 			if err != nil {
-				return arResult, err
+				if !errors.Is(err, rules.ErrRuleNotFound) {
+					return arResult, fmt.Errorf("failed to convert observation for check: %w", err)
+				}
+				log.Print(err)
 			}
 			oscalObservations = append(oscalObservations, r.toOSCALObservation(observation, rule))
 		}

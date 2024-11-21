@@ -25,4 +25,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 )
 
-replace github.com/oscal-compass/oscal-sdk-go => github.com/jpower432/oscal-sdk-go v0.0.0-20241118223408-5395967c8840
+replace github.com/oscal-compass/oscal-sdk-go => github.com/jpower432/oscal-sdk-go v0.0.0-20241121002344-ed9483d2ee7c

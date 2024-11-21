@@ -7,20 +7,22 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 )
 
+var _ rules.Store = (*Plan)(nil)
+
 type Plan struct {
 	Location string
-	rules.Store
+	store    rules.Store
 }
 
 func NewPlan(location string, store rules.Store) *Plan {
 	return &Plan{
 		Location: location,
-		Store:    store,
+		store:    store,
 	}
 }
 
 func (p *Plan) GetPolicyForComponent(ctx context.Context, componentTitle string) (Policy, error) {
-	collectedRules, err := p.FindByComponent(ctx, componentTitle)
+	collectedRules, err := p.store.FindByComponent(ctx, componentTitle)
 	if err != nil {
 		return Policy{}, err
 	}
@@ -34,4 +36,20 @@ func (p *Plan) GetPolicyForComponent(ctx context.Context, componentTitle string)
 	}
 	policy := Policy{collectedRules, parameters}
 	return policy, nil
+}
+
+func (p *Plan) GetByRuleID(ctx context.Context, ruleID string) (extensions.RuleSet, error) {
+	return p.store.GetByRuleID(ctx, ruleID)
+}
+
+func (p *Plan) GetByCheckID(ctx context.Context, checkID string) (extensions.RuleSet, error) {
+	return p.store.GetByCheckID(ctx, checkID)
+}
+
+func (p *Plan) FindByComponent(ctx context.Context, componentID string) ([]extensions.RuleSet, error) {
+	return p.store.FindByComponent(ctx, componentID)
+}
+
+func (p *Plan) All(ctx context.Context) ([]extensions.RuleSet, error) {
+	return p.store.All(ctx)
 }
