@@ -1,9 +1,9 @@
-package oscal
+package providers
 
 import (
 	"time"
 
-	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 )
 
 // Result represents the kind of result statuses.
@@ -35,22 +35,6 @@ func (r Result) String() string {
 	}
 }
 
-var protoByResult = map[Result]proto.Result{
-	ResultPass:    proto.Result_RESULT_PASS,
-	ResultInvalid: proto.Result_RESULT_UNSPECIFIED,
-	ResultError:   proto.Result_RESULT_ERROR,
-	ResultWarning: proto.Result_RESULT_WARNING,
-	ResultFail:    proto.Result_RESULT_FAILURE,
-}
-
-var resultByProto = map[proto.Result]Result{
-	proto.Result_RESULT_UNSPECIFIED: ResultInvalid,
-	proto.Result_RESULT_ERROR:       ResultError,
-	proto.Result_RESULT_WARNING:     ResultWarning,
-	proto.Result_RESULT_PASS:        ResultPass,
-	proto.Result_RESULT_FAILURE:     ResultFail,
-}
-
 type Property struct {
 	Name  string
 	Value string
@@ -80,4 +64,14 @@ type ObservationByCheck struct {
 	Collected         time.Time
 	RelevantEvidences []Link
 	Props             []Property
+}
+
+type PVPResult struct {
+	ObservationsByCheck []ObservationByCheck
+	Links               []Link
+}
+
+type Policy struct {
+	RuleSets   []extensions.RuleSet
+	Parameters []extensions.Parameter
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
@@ -35,11 +34,11 @@ func (p *pvpClient) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (p *pvpClient) GetResults() (oscal.PVPResult, error) {
+func (p *pvpClient) GetResults() (providers.PVPResult, error) {
 	resp, err := p.client.GetResults(context.Background(), &proto.Empty{})
 	if err != nil {
-		return oscal.PVPResult{}, err
+		return providers.PVPResult{}, err
 	}
-	pvpResult := oscal.NewResultFromProto(resp.Result)
+	pvpResult := NewResultFromProto(resp.Result)
 	return pvpResult, nil
 }

@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/codes"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
@@ -48,7 +47,7 @@ func (g *generationService) Generate(
 	ctx context.Context,
 	request *proto.GenerateRequest) (*proto.GenerateResponse, error) {
 
-	policies := oscal.NewPolicyFromProto(request.GetPolicy())
+	policies := NewPolicyFromProto(request.GetPolicy())
 	if err := g.Impl.Generate(policies); err != nil {
 		return &proto.GenerateResponse{Error: "I have errored"}, status.Error(codes.Internal, err.Error())
 	}

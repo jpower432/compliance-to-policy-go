@@ -2,8 +2,6 @@ package providers
 
 import (
 	"encoding/json"
-
-	. "github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
 )
 
 /*

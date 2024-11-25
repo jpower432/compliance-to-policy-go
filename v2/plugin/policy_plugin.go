@@ -50,5 +50,5 @@ func (p *pvpService) GetResults(
 	if err != nil {
 		return &proto.ResultsResponse{}, status.Error(codes.Internal, err.Error())
 	}
-	return &proto.ResultsResponse{Result: result.ToProto()}, nil
+	return &proto.ResultsResponse{Result: ResultsToProto(&result)}, nil
 }

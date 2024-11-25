@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	proto "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/v1alpha1"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
@@ -35,9 +34,9 @@ func (g *generationClient) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (g *generationClient) Generate(policy oscal.Policy) error {
+func (g *generationClient) Generate(policy providers.Policy) error {
 	request := &proto.GenerateRequest{
-		Policy: policy.ToProto(),
+		Policy: PolicyToProto(&policy),
 	}
 	_, err := g.client.Generate(context.Background(), request)
 	if err != nil {

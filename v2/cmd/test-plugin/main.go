@@ -6,7 +6,6 @@ import (
 
 	hplugin "github.com/hashicorp/go-plugin"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/oscal"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
@@ -25,15 +24,15 @@ func (p MyExamplePlugin) UpdateConfiguration(message json.RawMessage) error {
 	return nil
 }
 
-func (p MyExamplePlugin) Generate(rules oscal.Policy) error {
+func (p MyExamplePlugin) Generate(rules providers.Policy) error {
 	fmt.Println("I have been generated")
 	return nil
 }
 
-func (p MyExamplePlugin) GetResults() (oscal.PVPResult, error) {
+func (p MyExamplePlugin) GetResults() (providers.PVPResult, error) {
 	fmt.Println("I have been scanned")
-	return oscal.PVPResult{
-		ObservationsByCheck: []oscal.ObservationByCheck{
+	return providers.PVPResult{
+		ObservationsByCheck: []providers.ObservationByCheck{
 			{
 				Title:       "example",
 				Description: "example",

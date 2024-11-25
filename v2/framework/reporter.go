@@ -1,4 +1,4 @@
-package oscal
+package framework
 
 import (
 	"context"
@@ -11,29 +11,31 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+
+	"github.com/oscal-compass/compliance-to-policy-go/v2/providers"
 )
 
 type Reporter struct {
-	plan *Plan
+	store rules.Store
 }
 
-func NewReporter(plan *Plan) *Reporter {
+func NewReporter(store rules.Store) *Reporter {
 	return &Reporter{
-		plan: plan,
+		store: store,
 	}
 }
 
-func (r *Reporter) ToOSCAL(ctx context.Context, results []PVPResult) (oscalTypes.AssessmentResults, error) {
+func (r *Reporter) ToOSCAL(ctx context.Context, planHref string, results []providers.PVPResult) (oscalTypes.AssessmentResults, error) {
 	arResult := oscalTypes.AssessmentResults{
 		ImportAp: oscalTypes.ImportAp{
-			Href: r.plan.Location,
+			Href: planHref,
 		},
 	}
 	oscalObservations := make([]oscalTypes.Observation, 0)
 
 	for _, result := range results {
 		for _, observation := range result.ObservationsByCheck {
-			rule, err := r.plan.GetByCheckID(ctx, observation.CheckID)
+			rule, err := r.store.GetByCheckID(ctx, observation.CheckID)
 			if err != nil {
 				if !errors.Is(err, rules.ErrRuleNotFound) {
 					return arResult, fmt.Errorf("failed to convert observation for check: %w", err)
@@ -52,7 +54,7 @@ func (r *Reporter) ToOSCAL(ctx context.Context, results []PVPResult) (oscalTypes
 	return arResult, nil
 }
 
-func (r *Reporter) toOSCALObservation(observationByCheck ObservationByCheck, ruleSet extensions.RuleSet) oscalTypes.Observation {
+func (r *Reporter) toOSCALObservation(observationByCheck providers.ObservationByCheck, ruleSet extensions.RuleSet) oscalTypes.Observation {
 	subjects := make([]oscalTypes.SubjectReference, 0)
 	for _, subject := range observationByCheck.Subjects {
 		props := []oscalTypes.Property{
