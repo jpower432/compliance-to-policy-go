@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pvpcommon
+package framework
 
 import (
 	"bytes"
@@ -23,11 +23,11 @@ import (
 	"os"
 	"strings"
 
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"go.uber.org/zap"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg/oscal"
-	tp "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/pvpcommon/template"
-	typec2pcr "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/c2pcr"
+	tp "github.com/oscal-compass/compliance-to-policy-go/v2/framework/template"
 	typear "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/oscal/assessmentresults"
 	typecd "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/oscal/componentdefinition"
 )
@@ -37,8 +37,9 @@ var embeddedResources embed.FS
 
 type Oscal2Posture struct {
 	logger            *zap.Logger
-	c2pParsed         typec2pcr.C2PCRParsed
-	assessmentResults typear.AssessmentResultsRoot
+	assessmentResults *oscalTypes.AssessmentResults
+	catalog           *oscalTypes.Catalog
+	compDef           *oscalTypes.ComponentDefinition
 	templateFile      *string
 }
 
@@ -48,21 +49,22 @@ type TemplateValues struct {
 	AssessmentResult typear.AssessmentResults
 }
 
-func NewOscal2Posture(c2pParsed typec2pcr.C2PCRParsed, assessmentResults typear.AssessmentResultsRoot, templateFile *string, logger *zap.Logger) *Oscal2Posture {
+func NewOscal2Posture(assessmentResults *oscalTypes.AssessmentResults, catalog *oscalTypes.Catalog, compDef *oscalTypes.ComponentDefinition, logger *zap.Logger) *Oscal2Posture {
 	return &Oscal2Posture{
-		c2pParsed:         c2pParsed,
 		assessmentResults: assessmentResults,
-		templateFile:      templateFile,
+		catalog:           catalog,
+		compDef:           compDef,
+		logger:            logger,
 	}
 }
 
-func (r *Oscal2Posture) findSubjects(ruleId string) []typear.Subject {
-	subjects := []typear.Subject{}
-	for _, ar := range r.assessmentResults.AssessmentResults.Results {
-		for _, ob := range ar.Observations {
-			prop, found := oscal.FindProp("assessment-rule-id", ob.Props)
+func (r *Oscal2Posture) findSubjects(ruleId string) []oscalTypes.SubjectReference {
+	var subjects []oscalTypes.SubjectReference
+	for _, ar := range r.assessmentResults.Results {
+		for _, ob := range *ar.Observations {
+			prop, found := extensions.GetTrestleProp("assessment-rule-id", *ob.Props)
 			if found && prop.Value == ruleId {
-				subjects = append(subjects, ob.Subjects...)
+				subjects = append(subjects, *ob.Subjects...)
 			}
 		}
 	}
@@ -71,30 +73,32 @@ func (r *Oscal2Posture) findSubjects(ruleId string) []typear.Subject {
 
 func (r *Oscal2Posture) toTemplateValue() tp.TemplateValue {
 	templateValue := tp.TemplateValue{
-		CatalogTitle: r.c2pParsed.Catalog.Catalog.Metadata.Title,
+		CatalogTitle: r.catalog.Metadata.Title,
 		Components:   []tp.Component{},
 	}
-	for _, componentObject := range r.c2pParsed.ComponentObjects {
-		if componentObject.ComponentType == "validation" {
+	for _, componentObject := range *r.compDef.Components {
+		if componentObject.Type == "validation" {
 			continue
 		}
 		component := tp.Component{
-			ComponentTitle: componentObject.ComponentTitle,
+			ComponentTitle: componentObject.Title,
 			ControlResults: []tp.ControlResult{},
 		}
-		for _, cio := range componentObject.ControlImpleObjects {
-			for _, co := range cio.ControlObjects {
+		for _, cio := range *componentObject.ControlImplementations {
+			for _, co := range cio.ImplementedRequirements {
 				controlResult := tp.ControlResult{
-					ControlId:   co.GetControlId(),
+					ControlId:   co.ControlId,
 					RuleResults: []tp.RuleResult{},
 				}
-				for _, ruleId := range co.RuleIds {
+
+				ruleIdsProps := extensions.FindAllProps(*co.Props, extensions.WithName(extensions.RuleIdProp))
+				for _, ruleId := range ruleIdsProps {
 					subjects := []tp.Subject{}
-					rawSubjects := r.findSubjects(ruleId)
+					rawSubjects := r.findSubjects(ruleId.Value)
 					for _, rawSubject := range rawSubjects {
 						var result, reason string
-						resultProp, resultFound := oscal.FindProp("result", rawSubject.Props)
-						reasonProp, reasonFound := oscal.FindProp("reason", rawSubject.Props)
+						resultProp, resultFound := extensions.GetTrestleProp("result", *rawSubject.Props)
+						reasonProp, reasonFound := extensions.GetTrestleProp("reason", *rawSubject.Props)
 
 						if resultFound {
 							result = resultProp.Value
@@ -107,14 +111,14 @@ func (r *Oscal2Posture) toTemplateValue() tp.TemplateValue {
 						}
 						subject := tp.Subject{
 							Title:  rawSubject.Title,
-							UUID:   rawSubject.SubjectUUID,
+							UUID:   rawSubject.SubjectUuid,
 							Result: result,
 							Reason: reason,
 						}
 						subjects = append(subjects, subject)
 					}
 					controlResult.RuleResults = append(controlResult.RuleResults, tp.RuleResult{
-						RuleId:   ruleId,
+						RuleId:   ruleId.Value,
 						Subjects: subjects,
 					})
 				}
@@ -124,6 +128,10 @@ func (r *Oscal2Posture) toTemplateValue() tp.TemplateValue {
 		templateValue.Components = append(templateValue.Components, component)
 	}
 	return templateValue
+}
+
+func (r *Oscal2Posture) SetTemplateFile(templateFile string) {
+	r.templateFile = &templateFile
 }
 
 func (r *Oscal2Posture) Generate() ([]byte, error) {
