@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package server
 
 import (
 	"fmt"
@@ -31,10 +31,9 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/resid"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg/oscal"
-	policygenerator "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/policygenerator"
-	typec2pcr "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/c2pcr"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg/policygenerator"
 	pgtype "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/policygenerator"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 var logger *zap.Logger = pkg.GetLogger("composer")
@@ -61,14 +60,13 @@ func (c *Composer) GetPoliciesDir() string {
 	return c.policiesDir
 }
 
-func (c *Composer) ComposeByC2PParsed(c2pParsed typec2pcr.C2PCRParsed) error {
-	return c.Compose(c2pParsed.Namespace, c2pParsed.ComponentObjects, c2pParsed.ClusterSelectors)
+func (c *Composer) ComposeByPolicies(pl policy.Policy, config Config) error {
+	return c.Compose(pl, config)
 }
 
-func (c *Composer) Compose(namespace string, componentObjects []oscal.ComponentObject, clusterSelectors map[string]string) error {
-
-	if clusterSelectors == nil {
-		clusterSelectors = map[string]string{"env": "dev"}
+func (c *Composer) Compose(pl policy.Policy, config Config) error {
+	if config.clusterSelectors == nil {
+		config.clusterSelectors = map[string]string{"env": "dev"}
 	}
 
 	logger.Info("Start composing policySets")
@@ -76,87 +74,75 @@ func (c *Composer) Compose(namespace string, componentObjects []oscal.ComponentO
 	policyConfigMap := map[string]pgtype.PolicyConfig{}
 	policySets := []pgtype.PolicySetConfig{}
 	policySetPatches := []typekustomize.Patch{}
-	for _, componentObject := range componentObjects {
-		logger := logger.With(zap.Namespace(fmt.Sprintf("component %s", componentObject.ComponentTitle)))
-		logger.Info("Start generating policy")
-		for _, ruleObject := range componentObject.RuleObjects {
-			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, ruleObject.PolicyId)
-			destDir := fmt.Sprintf("%s/%s", c.tempDir.GetTempDir(), ruleObject.PolicyId)
+
+	logger.Info("Start generating policy")
+	for idx, ruleObject := range pl {
+		policyListPerControlImple := []string{}
+		if ruleObject.Rule.Parameter != nil {
+			parameters[ruleObject.Rule.Parameter.ID] = ruleObject.Rule.Parameter.Value
+		}
+		for _, check := range ruleObject.Checks {
+			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, check.ID)
+			policyId := check.ID
+			destDir := fmt.Sprintf("%s/%s", c.tempDir.GetTempDir(), policyId)
 			err := cp.Copy(sourceDir, destDir)
 			if err != nil {
 				return err
 			}
+
+			policyGeneratorManifestPath := destDir + "/policy-generator.yaml"
+			var policyGeneratorManifest pgtype.PolicyGenerator
+			if err := pkg.LoadYamlFileToObject(policyGeneratorManifestPath, &policyGeneratorManifest); err != nil {
+				return err
+			}
+			policyGeneratorManifest.PolicyDefaults.Namespace = config.namespace
+			policyGeneratorManifest.PolicyDefaults.PolicyOptions.Placement.ClusterSelectors = config.clusterSelectors
+			if err := pkg.WriteObjToYamlFileByGoYaml(policyGeneratorManifestPath, policyGeneratorManifest); err != nil {
+				return err
+			}
+			// For policySet
+			policyListPerControlImple = appendUnique(policyListPerControlImple, policyId)
+			policyConfig, ok := policyConfigMap[policyId]
+			if ok {
+				policyConfig.Standards = appendUnique(policyConfig.Standards, policyGeneratorManifest.PolicyDefaults.Standards...)
+				policyConfig.Categories = appendUnique(policyConfig.Categories, policyGeneratorManifest.PolicyDefaults.Categories...)
+				policyConfig.Controls = appendUnique(policyConfig.Controls, policyGeneratorManifest.PolicyDefaults.Controls...)
+				policyConfigMap[policyId] = policyConfig
+			} else {
+				policyConfig := policyGeneratorManifest.Policies[0]
+				policyConfig.Standards = policyGeneratorManifest.PolicyDefaults.Standards
+				policyConfig.Categories = policyGeneratorManifest.PolicyDefaults.Categories
+				policyConfig.Controls = policyGeneratorManifest.PolicyDefaults.Controls
+				for idx, manifest := range policyConfig.Manifests {
+					policyConfig.Manifests[idx].Path = strings.Replace(manifest.Path, "./", fmt.Sprintf("./%s/", policyId), 1)
+				}
+				policyConfigMap[policyId] = policyConfig
+			}
 		}
 
-		for idx, controlImpleObject := range componentObject.ControlImpleObjects {
-			policyListPerControlImple := []string{}
-			for _, param := range controlImpleObject.SetParameters {
-				parameters[param.ParamID] = param.Values[0]
-			}
-			for _, controlObject := range controlImpleObject.ControlObjects {
-				for _, ruleId := range controlObject.RuleIds {
-					ruleObject, ok := oscal.FindRulesByRuleId(ruleId, componentObject.RuleObjects)
-					if ok {
-						policyId := ruleObject.PolicyId
-						destDir := fmt.Sprintf("%s/%s", c.tempDir.GetTempDir(), policyId)
-						policyGeneratorManifestPath := destDir + "/policy-generator.yaml"
-						var policyGeneratorManifest pgtype.PolicyGenerator
-						if err := pkg.LoadYamlFileToObject(policyGeneratorManifestPath, &policyGeneratorManifest); err != nil {
-							return err
-						}
-						policyGeneratorManifest.PolicyDefaults.Namespace = namespace
-						policyGeneratorManifest.PolicyDefaults.PolicyOptions.Standards = []string{""}
-						policyGeneratorManifest.PolicyDefaults.PolicyOptions.Categories = []string{""}
-						policyGeneratorManifest.PolicyDefaults.PolicyOptions.Controls = []string{controlObject.ControlId}
-						policyGeneratorManifest.PolicyDefaults.PolicyOptions.Placement.ClusterSelectors = clusterSelectors
-						if err := pkg.WriteObjToYamlFileByGoYaml(policyGeneratorManifestPath, policyGeneratorManifest); err != nil {
-							return err
-						}
-						// For policySet
-						policyListPerControlImple = appendUnique(policyListPerControlImple, policyId)
-						policyConfig, ok := policyConfigMap[policyId]
-						if ok {
-							policyConfig.Standards = appendUnique(policyConfig.Standards, policyGeneratorManifest.PolicyDefaults.Standards...)
-							policyConfig.Categories = appendUnique(policyConfig.Categories, policyGeneratorManifest.PolicyDefaults.Categories...)
-							policyConfig.Controls = appendUnique(policyConfig.Controls, policyGeneratorManifest.PolicyDefaults.Controls...)
-							policyConfigMap[policyId] = policyConfig
-						} else {
-							policyConfig := policyGeneratorManifest.Policies[0]
-							policyConfig.Standards = policyGeneratorManifest.PolicyDefaults.Standards
-							policyConfig.Categories = policyGeneratorManifest.PolicyDefaults.Categories
-							policyConfig.Controls = policyGeneratorManifest.PolicyDefaults.Controls
-							for idx, manifest := range policyConfig.Manifests {
-								policyConfig.Manifests[idx].Path = strings.Replace(manifest.Path, "./", fmt.Sprintf("./%s/", policyId), 1)
-							}
-							policyConfigMap[policyId] = policyConfig
-						}
-					}
-				}
-			}
-			suffix := ""
-			if idx > 0 {
-				suffix = fmt.Sprintf("-%d", idx)
-			}
-			policySetConfig := pgtype.PolicySetConfig{
-				Name:     toDNSCompliant(componentObject.ComponentTitle + suffix),
-				Policies: policyListPerControlImple,
-			}
-			policySets = append(policySets, policySetConfig)
-			policySetPatch := typekustomize.Patch{
-				Target: &typekustomize.Selector{
-					ResId: resid.FromString(fmt.Sprintf("PolicySet../%s.", policySetConfig.Name)),
-				},
-				Patch: fmt.Sprintf(`[{"op": "replace", "path": "/metadata/annotations/%s", "value": "%s"}]`, pkg.ANNOTATION_COMPONENT_TITLE, componentObject.ComponentTitle),
-			}
-			policySetPatches = append(policySetPatches, policySetPatch)
+		suffix := ""
+		if idx > 0 {
+			suffix = fmt.Sprintf("-%d", idx)
 		}
+		policySetConfig := pgtype.PolicySetConfig{
+			Name:     toDNSCompliant(config.policySetName + suffix),
+			Policies: policyListPerControlImple,
+		}
+		policySets = append(policySets, policySetConfig)
+		policySetPatch := typekustomize.Patch{
+			Target: &typekustomize.Selector{
+				ResId: resid.FromString(fmt.Sprintf("PolicySet../%s.", policySetConfig.Name)),
+			},
+			Patch: fmt.Sprintf(`[{"op": "replace", "path": "/metadata/annotations/%s", "value": "%s"}]`, pkg.ANNOTATION_COMPONENT_TITLE, config.policySetName),
+		}
+		policySetPatches = append(policySetPatches, policySetPatch)
 	}
 
 	policyDefaults := pgtype.PolicyDefaults{
-		Namespace: namespace,
+		Namespace: config.namespace,
 		PolicyOptions: pgtype.PolicyOptions{
 			Placement: pgtype.PlacementConfig{
-				LabelSelector: clusterSelectors,
+				LabelSelector: config.clusterSelectors,
 			},
 		},
 		ConfigurationPolicyOptions: pgtype.ConfigurationPolicyOptions{
@@ -186,7 +172,7 @@ func (c *Composer) Compose(namespace string, componentObjects []oscal.ComponentO
 		return err
 	}
 
-	logger.Info("Create configmapt for templatized parameters")
+	logger.Info("Create configmap for templatized parameters")
 	parametersConfigmap := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -194,7 +180,7 @@ func (c *Composer) Compose(namespace string, componentObjects []oscal.ComponentO
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "c2p-parameters",
-			Namespace: namespace,
+			Namespace: config.namespace,
 		},
 		Data: parameters,
 	}
@@ -210,8 +196,6 @@ func (c *Composer) Compose(namespace string, componentObjects []oscal.ComponentO
 	if err := pkg.WriteObjToYamlFile(c.tempDir.GetTempDir()+"/kustomization.yaml", kustomize); err != nil {
 		return err
 	}
-	logger.Info("")
-
 	return nil
 }
 
