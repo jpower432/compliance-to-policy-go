@@ -14,18 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package tools
 
 import (
-	"os"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/subcommands/tools/oscal2posture"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/subcommands/tools/viewer"
 )
 
-func main() {
-	command := cli.New()
-	err := command.Execute()
-	if err != nil {
-		os.Exit(1)
+func New(logger *zap.Logger) *cobra.Command {
+	command := &cobra.Command{
+		Use:   "tools",
+		Short: "Tools for working with OSCAL Documents",
 	}
+	command.AddCommand(oscal2posture.New(logger), viewer.NewViewer())
+	return command
 }
