@@ -14,16 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package server
 
 import (
+	"fmt"
+
 	cp "github.com/otiai10/copy"
+	"go.uber.org/zap"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
-	typec2pcr "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/c2pcr"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 type Oscal2Policy struct {
+	policiesDir string
+	tempDir     pkg.TempDirectory
+	logger      *zap.Logger
 }
 
 func NewOscal2Policy(policiesDir string, tempDir pkg.TempDirectory) *Oscal2Policy {
@@ -34,8 +40,15 @@ func NewOscal2Policy(policiesDir string, tempDir pkg.TempDirectory) *Oscal2Polic
 	}
 }
 
-func (c *Oscal2Policy) Generate(c2pParsed typec2pcr.C2PCRParsed) error {
-
+func (c *Oscal2Policy) Generate(pl policy.Policy) error {
+	for _, ruleObject := range pl {
+		sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, ruleObject.Rule.ID)
+		destDir := fmt.Sprintf("%s/%s", c.tempDir.GetTempDir(), ruleObject.Rule.ID)
+		err := cp.Copy(sourceDir, destDir)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
