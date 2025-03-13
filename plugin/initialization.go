@@ -17,13 +17,22 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
+// ServeConfig defines options for
+type ServeConfig struct {
+	// Plugins Register implementations for different supported plugin types.
+	Plugins map[string]plugin.Plugin
+	// Logger add a logging implementation for the plugin.
+	Logger hclog.Logger
+}
+
 // Register a set of implemented plugins.
 // This function should be called last during plugin initialization in the main function.
-func Register(plugins map[string]plugin.Plugin) {
+func Register(config ServeConfig) {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,
-		Plugins:         plugins,
+		Plugins:         config.Plugins,
 		GRPCServer:      plugin.DefaultGRPCServer,
+		Logger:          config.Logger,
 	})
 }
 
