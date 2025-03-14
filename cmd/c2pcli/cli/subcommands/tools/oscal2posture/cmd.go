@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -59,7 +60,7 @@ func Run(options *Options, logger *zap.Logger) error {
 		return err
 	}
 	defer arFile.Close()
-	assessmentResults, err := generators.NewAssessmentResults(arFile)
+	assessmentResults, err := models.NewAssessmentResults(arFile, validation.NewSchemaValidator())
 	if err != nil {
 		return err
 	}
@@ -69,7 +70,7 @@ func Run(options *Options, logger *zap.Logger) error {
 		return err
 	}
 	defer catalogFile.Close()
-	catalog, err := generators.NewCatalog(catalogFile)
+	catalog, err := models.NewCatalog(catalogFile, validation.NewSchemaValidator())
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func Run(options *Options, logger *zap.Logger) error {
 		return err
 	}
 	defer compDefFile.Close()
-	compDef, err := generators.NewComponentDefinition(compDefFile)
+	compDef, err := models.NewComponentDefinition(compDefFile, validation.NewSchemaValidator())
 	if err != nil {
 		return err
 	}

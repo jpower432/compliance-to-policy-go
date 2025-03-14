@@ -1,3 +1,8 @@
+/*
+ Copyright 2025 The OSCAL Compass Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package server
 
 import (
@@ -32,13 +37,13 @@ func (p *Plugin) Configure(m map[string]string) error {
 
 func (p *Plugin) Generate(pl policy.Policy) error {
 	tmpdir := pkg.NewTempDirectory(p.config.tempDir)
-	composer := NewComposerByTempDirectory(p.config.policyResultsDir, tmpdir)
+	composer := NewComposerByTempDirectory(p.config.policiesDir, tmpdir)
 	if err := composer.ComposeByPolicies(pl, p.config); err != nil {
-		panic(err)
+		return err
 	}
 	policySet, err := composer.GeneratePolicySet()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, resource := range (*policySet).Resources() {
@@ -47,12 +52,12 @@ func (p *Plugin) Generate(pl policy.Policy) error {
 		namespace := resource.GetNamespace()
 		yamlByte, err := resource.AsYAML()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		fnamesTokens := []string{kind, namespace, name}
 		fname := strings.Join(fnamesTokens, ".") + ".yaml"
 		if err := os.WriteFile(p.config.outputDir+"/"+fname, yamlByte, os.ModePerm); err != nil {
-			panic(err)
+			return err
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/stretchr/testify/require"
 )
 
@@ -93,7 +93,7 @@ func TestResolveOptions(t *testing.T) {
 	testDataPath := "../../test/testdata/component-definition-test.json"
 	testFile, err := os.Open(testDataPath)
 	require.NoError(t, err)
-	compDef, err := generators.NewComponentDefinition(testFile)
+	compDef, err := models.NewComponentDefinition(testFile)
 	require.NoError(t, err)
 	config := &C2PConfig{
 		ComponentDefinitions: []oscalTypes.ComponentDefinition{

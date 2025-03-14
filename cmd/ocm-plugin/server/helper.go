@@ -22,6 +22,7 @@ import (
 
 	typeconfigpolicy "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/configurationpolicy"
 	typepolicy "github.com/oscal-compass/compliance-to-policy-go/v2/pkg/types/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 // - pass: the policy requirements are met
@@ -48,19 +49,19 @@ const (
 	PolicyResultSkip PolicyResult = "skip"
 )
 
-func mapToPolicyResult(complianceState typepolicy.ComplianceState) typepolr.PolicyResult {
-	var result PolicyResult
+func mapToPolicyResult(complianceState typepolicy.ComplianceState) policy.Result {
+	var result policy.Result
 	switch complianceState {
 	case typepolicy.Compliant:
-		result = PolicyResultPass
+		result = policy.ResultPass
 	case typepolicy.NonCompliant:
-		result = PolicyResultFail
+		result = policy.ResultFail
 	case typepolicy.Pending:
-		result = PolicyResultError
+		result = policy.ResultError
 	default:
-		result = PolicyResultError
+		result = policy.ResultError
 	}
-	return typepolr.PolicyResult(result)
+	return result
 }
 
 // Severity : low, medium, high, or critical

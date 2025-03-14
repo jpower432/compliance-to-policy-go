@@ -25,8 +25,10 @@ import (
 
 func main() {
 	ocmPlugin := server.NewPlugin()
-	pluginByType := map[string]hplugin.Plugin{
-		plugin.PVPPluginName: &plugin.PVPPlugin{Impl: ocmPlugin},
+	serveConfig := plugin.ServeConfig{
+		Plugins: map[string]hplugin.Plugin{
+			plugin.PVPPluginName: &plugin.PVPPlugin{Impl: ocmPlugin},
+		},
 	}
-	plugin.Register(pluginByType)
+	plugin.Register(serveConfig)
 }

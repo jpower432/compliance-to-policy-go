@@ -82,8 +82,8 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 			parameters[ruleObject.Rule.Parameter.ID] = ruleObject.Rule.Parameter.Value
 		}
 		for _, check := range ruleObject.Checks {
-			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, check.ID)
 			policyId := check.ID
+			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, check.ID)
 			destDir := fmt.Sprintf("%s/%s", c.tempDir.GetTempDir(), policyId)
 			err := cp.Copy(sourceDir, destDir)
 			if err != nil {

@@ -1,11 +1,17 @@
+/*
+ Copyright 2025 The OSCAL Compass Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package subcommands
 
 import (
 	"os"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 )
@@ -30,7 +36,7 @@ func loadCompDef(path string) (*oscalTypes.ComponentDefinition, error) {
 		return nil, err
 	}
 	defer file.Close()
-	compDef, err := generators.NewComponentDefinition(file)
+	compDef, err := models.NewComponentDefinition(file, validation.NewSchemaValidator())
 	if err != nil {
 		return nil, err
 	}

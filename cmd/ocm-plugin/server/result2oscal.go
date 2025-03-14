@@ -172,7 +172,7 @@ func (r *ResultToOscal) GenerateResults() (provider.PVPResult, error) {
 							Type:       "resource",
 							Title:      "Cluster Name: " + clusterName,
 							ResourceID: inventoryUuid,
-							Result:     mapToRuleStatus(reason.ComplianceState),
+							Result:     mapToPolicyResult(reason.ComplianceState),
 							Reason:     message,
 						}
 						subjects = append(subjects, subject)
@@ -188,7 +188,8 @@ func (r *ResultToOscal) GenerateResults() (provider.PVPResult, error) {
 			}
 
 			observation := provider.ObservationByCheck{
-				Title:       policyId,
+				Title:       rule.Rule.ID,
+				CheckID:     policyId,
 				Description: fmt.Sprintf("Observation of policy %s", policyId),
 				Methods:     []string{"TEST-AUTOMATED"},
 				Props:       props,
@@ -235,17 +236,4 @@ func (r *ResultToOscal) loadData(path string, out interface{}) error {
 		return err
 	}
 	return nil
-}
-
-func mapToRuleStatus(complianceState typepolicy.ComplianceState) provider.Result {
-	switch complianceState {
-	case typepolicy.Compliant:
-		return provider.ResultPass
-	case typepolicy.NonCompliant:
-		return provider.ResultFail
-	case typepolicy.Pending:
-		return provider.ResultFail
-	default:
-		return provider.ResultError
-	}
 }

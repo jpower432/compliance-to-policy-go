@@ -81,6 +81,11 @@ all: build
 build:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o ./bin/c2pcli_$(VERSIONED_SUFFIX) ./cmd/c2pcli
 
+.PHONY: build-plugins
+build-plugins:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o ./bin/c2pcli_$(VERSIONED_SUFFIX) ./cmd/kyverno-plugin
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o ./bin/c2pcli_$(VERSIONED_SUFFIX) ./cmd/ocm-plugin
+
 .PHONY: test
 test:
 	go test ./pkg/... ./plugin/... ./framework/... -coverprofile cover.out
