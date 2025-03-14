@@ -23,66 +23,78 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/subcommands"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 )
 
-var logger *zap.Logger = pkg.GetLogger("oscal2posture")
-
-func New(logger *zap.Logger) *cobra.Command {
-	opts := NewOptions()
-
+func New() *cobra.Command {
+	options := subcommands.NewOptions()
 	command := &cobra.Command{
 		Use:   "oscal2posture",
-		Short: "Generate Compliance Posture from OSCAL artifacts",
+		Short: "Generate Compliance Posture from OSCAL artifacts.",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				_ = viper.BindPFlag(flag.Name, flag)
+			})
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.Complete(); err != nil {
+			if err := viper.Unmarshal(options); err != nil {
+				return err
+			}
+			if err := options.Validate(); err != nil {
 				return err
 			}
 
-			if err := opts.Validate(); err != nil {
-				return err
+			// Extra validation for this command
+			if options.Catalog == "" {
+				return fmt.Errorf("\"catalog\" flag must be set")
 			}
-			return Run(opts, logger)
+			logger := pkg.GetLogger("oscal2posture")
+			return Run(logger, options)
 		},
 	}
-	opts.AddFlags(command.Flags())
-
+	fs := command.Flags()
+	fs.StringP("catalog", "c", "", "path to catalog.json")
+	fs.StringP("assessment-results", "a", "./assessment-results.json", "path to assessment-results.json")
+	fs.StringP("component-definition", "d", "", "path to component-definition.json")
+	fs.StringP("out", "o", "-", "path to output file. Use '-' for stdout. Default '-'.")
 	return command
 }
 
-func Run(options *Options, logger *zap.Logger) error {
-
-	arFile, err := os.Open(options.AssessmentResults)
+func Run(logger *zap.Logger, option *subcommands.Options) error {
+	arFile, err := os.Open(option.AssessmentResults)
 	if err != nil {
 		return err
 	}
 	defer arFile.Close()
 	assessmentResults, err := models.NewAssessmentResults(arFile, validation.NewSchemaValidator())
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading assessment results: %w", err)
 	}
 
-	catalogFile, err := os.Open(options.Catalog)
+	catalogFile, err := os.Open(option.Catalog)
 	if err != nil {
 		return err
 	}
 	defer catalogFile.Close()
 	catalog, err := models.NewCatalog(catalogFile, validation.NewSchemaValidator())
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading catalog: %w", err)
 	}
 
-	compDefFile, err := os.Open(options.ComponentDefinition)
+	compDefFile, err := os.Open(option.Definition)
 	if err != nil {
 		return err
 	}
 	defer compDefFile.Close()
 	compDef, err := models.NewComponentDefinition(compDefFile, validation.NewSchemaValidator())
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading component definition: %w", err)
 	}
 
 	r := framework.NewOscal2Posture(assessmentResults, catalog, compDef, logger)
@@ -91,11 +103,11 @@ func Run(options *Options, logger *zap.Logger) error {
 		return err
 	}
 
-	if options.Out == "-" {
+	out := option.Output
+	if out == "-" {
 		fmt.Fprintln(os.Stdout, string(data))
 	} else {
-		return os.WriteFile(options.Out, data, os.ModePerm)
+		return os.WriteFile(out, data, os.ModePerm)
 	}
-
 	return nil
 }

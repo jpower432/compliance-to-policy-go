@@ -19,48 +19,56 @@ package subcommands
 import (
 	"errors"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
-type ResultOptions struct {
-	*Options
-	OutputPath string
+const PluginConfigPath = "config-path"
+
+func BindCommonFlags(fs *pflag.FlagSet) {
+	fs.StringP("name", "n", "", "short name of the control source for the implementation to be evaluated.")
+	fs.StringP("component-definition", "d", "", "path to component definition")
+	fs.StringP("plugin-dir", "p", "", "Path to plugin directory. Defaults to `c2p-plugins`.")
+	fs.StringP(PluginConfigPath, "c", "plugins.yaml", "Path to the configuration file for plugins.")
 }
 
-func NewResultOptions(options *Options) *ResultOptions {
-	return &ResultOptions{
-		Options: options,
+func setupViper(cmd *cobra.Command) error {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		err := viper.BindPFlag(flag.Name, flag)
+		if err != nil {
+			panic(err)
+		}
+	})
+	if viper.IsSet(PluginConfigPath) {
+		viper.SetConfigFile(viper.GetString(PluginConfigPath))
+		return viper.ReadInConfig()
 	}
-}
-
-func (o *ResultOptions) AddFlags(fs *pflag.FlagSet) {
-	o.Options.AddFlags(fs)
-	fs.StringVarP(&o.OutputPath, "out", "o", "./assessment-results.json", "path to output OSCAL Assessment Results")
-}
-
-func (o *ResultOptions) Validate() error {
-	return o.Options.Validate()
+	return nil
 }
 
 type Options struct {
-	ComponentDefinition string
-	Name                string
-	PluginsPath         string
+	PluginDir         string                       `yaml:"plugin-dir" mapstructure:"plugin-dir"`
+	Name              string                       `yaml:"name" mapstructure:"name"`
+	Definition        string                       `yaml:"component-definition" mapstructure:"component-definition"`
+	Catalog           string                       `yaml:"catalog" mapstructure:"catalog"`
+	AssessmentResults string                       `yaml:"assessment-results" mapstructure:"assessment-results"`
+	Plugins           map[string]map[string]string `yaml:"plugins" mapstructure:"plugins"`
+	Output            string                       `yaml:"out" mapstructure:"out"`
 }
 
 func NewOptions() *Options {
-	return &Options{}
-}
-
-func (o *Options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&o.ComponentDefinition, "compdef", "c", ".", "path to component definition")
-	fs.StringVarP(&o.Name, "name", "n", "", "short name for the chosen component implementation")
-	fs.StringVarP(&o.PluginsPath, "plugin-dir", "d", "", "Path to plugin directory. Defaults to `c2p-plugins`.")
+	return &Options{
+		Plugins: make(map[string]map[string]string),
+	}
 }
 
 func (o *Options) Validate() error {
+	if o.Definition == "" {
+		return errors.New("component-definition option must be set")
+	}
 	if o.Name == "" {
-		return errors.New("-n or --name is required")
+		return errors.New("name option must be set")
 	}
 	return nil
 }

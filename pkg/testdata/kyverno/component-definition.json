@@ -5,7 +5,7 @@
       "title": "Component Definition for Kube",
       "last-modified": "2023-10-17T22:21:08+00:00",
       "version": "1.0",
-      "oscal-version": "1.0.4"
+      "oscal-version": "1.1.2"
     },
     "components": [
       {
@@ -31,6 +31,13 @@
           {
             "uuid": "bcdb290a-e726-4350-a06a-b7726b826e72",
             "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json",
+            "props": [
+              {
+                "name": "Framework_Short_Name",
+                "ns": "https://oscal-compass.github.io/compliance-trestle/schemas/oscal",
+                "value": "nist_800_53"
+              }
+            ],
             "description": "NIST r5",
             "implemented-requirements": [
               {
@@ -45,7 +52,7 @@
                     "props": [
                       {
                         "name": "Rule_Id",
-                        "ns": "http://oscal-compass.github.io/compliance-trestle/schemas/oscal/cd/kubernetes",
+                        "ns": "https://oscal-compass.github.io/compliance-trestle/schemas/oscal/cd/kubernetes",
                         "value": "allowed-base-images"
                       }
                     ]
@@ -80,8 +87,7 @@
             "value": "allowed-base-images",
             "remarks": "rule_set_1"
           }
-        ],
-        "control-implementations": []
+        ]
       }
     ]
   }

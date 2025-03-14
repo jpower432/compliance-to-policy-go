@@ -20,40 +20,41 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 )
 
 func NewOSCAL2Policy() *cobra.Command {
-	opts := NewOptions()
-
+	options := NewOptions()
 	command := &cobra.Command{
 		Use:   "oscal2policy",
 		Short: "Transform OSCAL to policy artifacts.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return setupViper(cmd)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.Validate(); err != nil {
+			if err := viper.Unmarshal(options); err != nil {
 				return err
 			}
-			return runOSCAL2Policy(cmd.Context(), opts)
+			if err := options.Validate(); err != nil {
+				return err
+			}
+			return runOSCAL2Policy(cmd.Context(), options)
 		},
 	}
-
-	opts.AddFlags(command.Flags())
-
+	BindCommonFlags(command.Flags())
 	return command
 }
 
-func runOSCAL2Policy(ctx context.Context, options *Options) error {
-	var pluginsPath *string
-	if options.PluginsPath != "" {
-		pluginsPath = &options.PluginsPath
-	}
-	frameworkConfig, err := Config(options.ComponentDefinition, pluginsPath)
+func runOSCAL2Policy(ctx context.Context, option *Options) error {
+	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
 	}
 
-	settings, err := Settings(options, frameworkConfig)
+	settings, err := Settings(frameworkConfig, option)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,9 @@ func runOSCAL2Policy(ctx context.Context, options *Options) error {
 		return err
 	}
 
-	var configSelections map[string]map[string]string
+	var configSelections config.PluginConfig = func(pluginID string) map[string]string {
+		return option.Plugins[pluginID]
+	}
 	launchedPlugins, err := manager.LaunchPolicyPlugins(foundPlugins, configSelections)
 	if err != nil {
 		return err

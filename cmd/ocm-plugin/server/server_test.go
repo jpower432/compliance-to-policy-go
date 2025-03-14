@@ -35,12 +35,12 @@ func TestOscal2Policy(t *testing.T) {
 
 	testPolicy := createPolicy(t)
 	plugin := NewPlugin()
-	plugin.config.policiesDir = policyDir
-	plugin.config.namespace = "test"
-	plugin.config.policySetName = "Managed Kubernetes"
-	plugin.config.tempDir = tempDir.GetTempDir()
-	plugin.config.outputDir = tmpOutputDir
-	plugin.config.policyResultsDir = tmpOutputDir
+	plugin.config.PoliciesDir = policyDir
+	plugin.config.Namespace = "test"
+	plugin.config.PolicySetName = "Managed Kubernetes"
+	plugin.config.TempDir = tempDir.GetTempDir()
+	plugin.config.OutputDir = tmpOutputDir
+	plugin.config.PolicyResultsDir = tmpOutputDir
 	require.NoError(t, plugin.Generate(testPolicy))
 }
 

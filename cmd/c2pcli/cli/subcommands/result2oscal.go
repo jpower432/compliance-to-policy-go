@@ -21,41 +21,46 @@ import (
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 )
 
 func NewResult2OSCAL() *cobra.Command {
-	opts := NewResultOptions(NewOptions())
-
+	options := NewOptions()
 	command := &cobra.Command{
 		Use:   "result2oscal",
-		Short: "Transform policy result artifact to OSCAL Assessment Results.",
+		Short: "Transform policy result artifacts to OSCAL Assessment Results.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return setupViper(cmd)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.Validate(); err != nil {
+			if err := viper.Unmarshal(options); err != nil {
 				return err
 			}
-			return runResult2Policy(cmd.Context(), opts)
+			if err := options.Validate(); err != nil {
+				return err
+			}
+			return runResult2Policy(cmd.Context(), options)
 		},
 	}
 
-	opts.AddFlags(command.Flags())
+	fs := command.Flags()
+	fs.StringP("out", "o", "./assessment-results.json", "path to output OSCAL Assessment Results")
+	BindCommonFlags(fs)
 
 	return command
 }
 
-func runResult2Policy(ctx context.Context, options *ResultOptions) error {
-	var pluginsPath *string
-	if options.PluginsPath != "" {
-		pluginsPath = &options.PluginsPath
-	}
-	frameworkConfig, err := Config(options.ComponentDefinition, pluginsPath)
+func runResult2Policy(ctx context.Context, option *Options) error {
+	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
 	}
 
-	settings, err := Settings(options.Options, frameworkConfig)
+	settings, err := Settings(frameworkConfig, option)
 	if err != nil {
 		return err
 	}
@@ -69,8 +74,10 @@ func runResult2Policy(ctx context.Context, options *ResultOptions) error {
 		return err
 	}
 
-	var configSelection map[string]map[string]string
-	launchedPlugins, err := manager.LaunchPolicyPlugins(foundPlugins, configSelection)
+	var configSelections config.PluginConfig = func(pluginID string) map[string]string {
+		return option.Plugins[pluginID]
+	}
+	launchedPlugins, err := manager.LaunchPolicyPlugins(foundPlugins, configSelections)
 	if err != nil {
 		return err
 	}
@@ -90,7 +97,7 @@ func runResult2Policy(ctx context.Context, options *ResultOptions) error {
 		AssessmentResults: &assessmentResults,
 	}
 
-	err = pkg.WriteObjToJsonFile(options.OutputPath, oscalModels)
+	err = pkg.WriteObjToJsonFile(viper.GetString("out"), oscalModels)
 	if err != nil {
 		return err
 	}

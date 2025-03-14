@@ -6,11 +6,11 @@
 package server
 
 type Config struct {
-	policiesDir      string            `mapstructure:"policy-dir"`
-	policyResultsDir string            `mapstructure:"polciy-results-dir"`
-	tempDir          string            `mapstructure:"temp-dir"`
-	outputDir        string            `mapstructure:"output-dir"`
-	namespace        string            `mapstructure:"namespace"`
-	policySetName    string            `mapstructure:"policy-set-name"`
+	PoliciesDir      string            `mapstructure:"policy-dir"`
+	PolicyResultsDir string            `mapstructure:"polciy-results-dir"`
+	TempDir          string            `mapstructure:"temp-dir"`
+	OutputDir        string            `mapstructure:"output-dir"`
+	Namespace        string            `mapstructure:"Namespace"`
+	PolicySetName    string            `mapstructure:"policy-set-name"`
 	clusterSelectors map[string]string `mapstructure:"cluster-selectors"`
 }

@@ -16,10 +16,13 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 )
 
-func Config(componentPath string, pluginsPaths *string) (*config.C2PConfig, error) {
+// Config returns a populated C2PConfig for the CLI to use.
+func Config(option *Options) (*config.C2PConfig, error) {
 	c2pConfig := config.DefaultConfig()
-	if pluginsPaths != nil {
-		c2pConfig.PluginDir = *pluginsPaths
+	componentPath := option.Definition
+	pluginsPath := option.PluginDir
+	if pluginsPath != "" {
+		c2pConfig.PluginDir = pluginsPath
 	}
 
 	compDef, err := loadCompDef(componentPath)
@@ -43,7 +46,8 @@ func loadCompDef(path string) (*oscalTypes.ComponentDefinition, error) {
 	return compDef, nil
 }
 
-func Settings(options *Options, frameworkConfig *config.C2PConfig) (*settings.ImplementationSettings, error) {
+// Settings returns extracted compliance settings from a given component definition implementation using the C2PConfig.
+func Settings(frameworkConfig *config.C2PConfig, option *Options) (*settings.ImplementationSettings, error) {
 	var implementation []oscalTypes.ControlImplementationSet
 	for _, comp := range frameworkConfig.ComponentDefinitions {
 		for _, cp := range *comp.Components {
@@ -52,5 +56,5 @@ func Settings(options *Options, frameworkConfig *config.C2PConfig) (*settings.Im
 			}
 		}
 	}
-	return settings.Framework(options.Name, implementation)
+	return settings.Framework(option.Name, implementation)
 }

@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/go-viper/mapstructure/v2"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
@@ -29,15 +29,12 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) Configure(m map[string]string) error {
-	for k, v := range m {
-		viper.Set(k, v)
-	}
-	return viper.Unmarshal(&p.config)
+	return mapstructure.Decode(m, &p.config)
 }
 
 func (p *Plugin) Generate(pl policy.Policy) error {
-	tmpdir := pkg.NewTempDirectory(p.config.tempDir)
-	composer := NewComposerByTempDirectory(p.config.policiesDir, tmpdir)
+	tmpdir := pkg.NewTempDirectory(p.config.TempDir)
+	composer := NewComposerByTempDirectory(p.config.PoliciesDir, tmpdir)
 	if err := composer.ComposeByPolicies(pl, p.config); err != nil {
 		return err
 	}
@@ -56,7 +53,7 @@ func (p *Plugin) Generate(pl policy.Policy) error {
 		}
 		fnamesTokens := []string{kind, namespace, name}
 		fname := strings.Join(fnamesTokens, ".") + ".yaml"
-		if err := os.WriteFile(p.config.outputDir+"/"+fname, yamlByte, os.ModePerm); err != nil {
+		if err := os.WriteFile(p.config.OutputDir+"/"+fname, yamlByte, os.ModePerm); err != nil {
 			return err
 		}
 	}
@@ -70,6 +67,6 @@ func (p *Plugin) Generate(pl policy.Policy) error {
 }
 
 func (p *Plugin) GetResults(pl policy.Policy) (policy.PVPResult, error) {
-	results := NewResultToOscal(pl, p.config.policyResultsDir, p.config.namespace, p.config.policySetName)
+	results := NewResultToOscal(pl, p.config.PolicyResultsDir, p.config.Namespace, p.config.PolicySetName)
 	return results.GenerateResults()
 }

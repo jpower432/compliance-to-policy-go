@@ -2,21 +2,23 @@
 
 ### Usage of C2P CLI
 ```
-$ c2pcli ocm -h
-C2P CLI OCM plugin
+C2P CLI
 
 Usage:
-  c2pcli ocm [command]
+  c2pcli [command]
 
 Available Commands:
-  oscal2policy Compose deliverable OCM Policies from OSCAL
-  result2oscal Generate OSCAL Assessment Results from OCM Policy statuses
-  tools        Tools
+  completion   Generate the autocompletion script for the specified shell
+  help         Help about any command
+  oscal2policy Transform OSCAL to policy artifacts.
+  result2oscal Transform policy result artifact to OSCAL Assessment Results.
+  tools        Tools for working with OSCAL Documents
+  version      Display version
 
 Flags:
-  -h, --help   help for ocm
+  -h, --help   help for c2pcli
 
-Use "c2pcli ocm [command] --help" for more information about a command.
+Use "c2pcli [command] --help" for more information about a command.
 ```
 
 ### Prerequisites

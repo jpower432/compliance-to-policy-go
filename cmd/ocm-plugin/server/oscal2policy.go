@@ -95,7 +95,7 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 			if err := pkg.LoadYamlFileToObject(policyGeneratorManifestPath, &policyGeneratorManifest); err != nil {
 				return err
 			}
-			policyGeneratorManifest.PolicyDefaults.Namespace = config.namespace
+			policyGeneratorManifest.PolicyDefaults.Namespace = config.Namespace
 			policyGeneratorManifest.PolicyDefaults.PolicyOptions.Placement.ClusterSelectors = config.clusterSelectors
 			if err := pkg.WriteObjToYamlFileByGoYaml(policyGeneratorManifestPath, policyGeneratorManifest); err != nil {
 				return err
@@ -125,7 +125,7 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 			suffix = fmt.Sprintf("-%d", idx)
 		}
 		policySetConfig := pgtype.PolicySetConfig{
-			Name:     toDNSCompliant(config.policySetName + suffix),
+			Name:     toDNSCompliant(config.PolicySetName + suffix),
 			Policies: policyListPerControlImple,
 		}
 		policySets = append(policySets, policySetConfig)
@@ -133,13 +133,13 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 			Target: &typekustomize.Selector{
 				ResId: resid.FromString(fmt.Sprintf("PolicySet../%s.", policySetConfig.Name)),
 			},
-			Patch: fmt.Sprintf(`[{"op": "replace", "path": "/metadata/annotations/%s", "value": "%s"}]`, pkg.ANNOTATION_COMPONENT_TITLE, config.policySetName),
+			Patch: fmt.Sprintf(`[{"op": "replace", "path": "/metadata/annotations/%s", "value": "%s"}]`, pkg.ANNOTATION_COMPONENT_TITLE, config.PolicySetName),
 		}
 		policySetPatches = append(policySetPatches, policySetPatch)
 	}
 
 	policyDefaults := pgtype.PolicyDefaults{
-		Namespace: config.namespace,
+		Namespace: config.Namespace,
 		PolicyOptions: pgtype.PolicyOptions{
 			Placement: pgtype.PlacementConfig{
 				LabelSelector: config.clusterSelectors,
@@ -180,7 +180,7 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "c2p-parameters",
-			Namespace: config.namespace,
+			Namespace: config.Namespace,
 		},
 		Data: parameters,
 	}

@@ -18,24 +18,19 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/subcommands"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/subcommands/tools"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 )
 
-var logger *zap.Logger = pkg.GetLogger("cli")
-
 func New() *cobra.Command {
-
 	command := &cobra.Command{
 		Use:   "c2pcli",
 		Short: "C2P CLI",
 	}
 	command.AddCommand(
 		subcommands.NewVersionSubCommand(),
-		tools.New(logger),
+		tools.New(),
 		subcommands.NewOSCAL2Policy(),
 		subcommands.NewResult2OSCAL(),
 	)
