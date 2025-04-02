@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -30,8 +29,7 @@ type C2PConfig struct {
 	PluginDir string
 	// Logger is the logging implementation used in the PluginManager and
 	// plugin clients.
-	Logger               hclog.Logger
-	ComponentDefinitions []oscalTypes.ComponentDefinition
+	Logger hclog.Logger
 }
 
 var defaultLogger = hclog.New(&hclog.LoggerOptions{
@@ -43,9 +41,8 @@ var defaultLogger = hclog.New(&hclog.LoggerOptions{
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *C2PConfig {
 	return &C2PConfig{
-		PluginDir:            DefaultPluginPath,
-		Logger:               defaultLogger,
-		ComponentDefinitions: make([]oscalTypes.ComponentDefinition, 0),
+		PluginDir: DefaultPluginPath,
+		Logger:    defaultLogger,
 	}
 }
 
@@ -62,9 +59,6 @@ func (c *C2PConfig) Validate() error {
 			return fmt.Errorf("plugin directory %s does not exist: %w", c.PluginDir, err)
 		}
 		return err
-	}
-	if len(c.ComponentDefinitions) == 0 {
-		return fmt.Errorf("component definitions not set")
 	}
 	if c.Logger == nil {
 		c.Logger = defaultLogger

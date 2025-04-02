@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
@@ -53,6 +54,7 @@ var (
 			},
 		},
 	}
+	testDataPath = pkg.PathFromPkgDirectory("./testdata/oscal/component-definition-test.json")
 )
 
 func TestNewPluginManager(t *testing.T) {

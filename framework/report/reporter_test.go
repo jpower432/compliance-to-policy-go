@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package framework
+package report
 
 import (
 	"context"
@@ -17,6 +17,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
@@ -255,4 +256,17 @@ func prepImplementationSettings(t *testing.T, testComp oscalTypes.ComponentDefin
 
 	return *implementationSettings
 
+}
+
+// prepConfig returns an initialized C2PConfig to support the
+// unit tests.
+func prepConfig(t *testing.T) *config.C2PConfig {
+	cfg := config.DefaultConfig()
+	cfg.PluginDir = "."
+	file, err := os.Open(testDataPath)
+	require.NoError(t, err)
+	definition, err := models.NewComponentDefinition(file, validation.NoopValidator{})
+	require.NoError(t, err)
+	cfg.ComponentDefinitions = append(cfg.ComponentDefinitions, *definition)
+	return cfg
 }

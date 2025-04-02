@@ -14,7 +14,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/report"
 )
 
 func NewOSCAL2Posture(logger hclog.Logger) *cobra.Command {
@@ -85,7 +85,7 @@ func runOSCAL2Posture(option *Options) error {
 		return fmt.Errorf("error loading component definition: %w", err)
 	}
 
-	r := framework.NewOscal2Posture(assessmentResults, catalog, compDef, option.logger)
+	r := report.NewOscal2Posture(assessmentResults, catalog, compDef, option.logger)
 	data, err := r.Generate()
 	if err != nil {
 		return err

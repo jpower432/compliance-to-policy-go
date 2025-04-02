@@ -27,7 +27,9 @@ import (
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/report"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
 func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
@@ -73,16 +75,22 @@ func runResult2Policy(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	settings, err := Settings(frameworkConfig, option)
+	settings, err := Settings(option)
 	if err != nil {
 		return err
 	}
+
+	target, err := Target(option)
+	if err != nil {
+		return err
+	}
+	target.Settings = settings.AllSettings()
 
 	manager, err := framework.NewPluginManager(frameworkConfig)
 	if err != nil {
 		return err
 	}
-	foundPlugins, err := manager.FindRequestedPlugins()
+	foundPlugins, err := manager.FindRequestedPlugins(target, plugin.PVPPluginName)
 	if err != nil {
 		return err
 	}
@@ -96,12 +104,12 @@ func runResult2Policy(ctx context.Context, option *Options) error {
 	}
 	defer manager.Clean()
 
-	results, err := manager.AggregateResults(ctx, launchedPlugins, settings.AllSettings())
+	results, err := framework.AggregateResults(ctx, launchedPlugins, target)
 	if err != nil {
 		return err
 	}
 
-	reporter, err := framework.NewReporter(frameworkConfig)
+	reporter, err := report.NewReporter(option.logger, target)
 	if err != nil {
 		return err
 	}

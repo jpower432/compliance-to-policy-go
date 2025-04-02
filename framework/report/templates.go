@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package framework
+package report
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 
-	tp "github.com/oscal-compass/compliance-to-policy-go/v2/framework/template"
+	tp "github.com/oscal-compass/compliance-to-policy-go/v2/framework/report/template"
 )
 
 // ResultsTemplateValues defines values for a plan-based posture report.

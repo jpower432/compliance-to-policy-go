@@ -6,6 +6,7 @@
 package subcommands
 
 import (
+	"errors"
 	"os"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
@@ -19,44 +20,50 @@ import (
 // Config returns a populated C2PConfig for the CLI to use.
 func Config(option *Options) (*config.C2PConfig, error) {
 	c2pConfig := config.DefaultConfig()
-	componentPath := option.Definition
 	pluginsPath := option.PluginDir
 	if pluginsPath != "" {
 		c2pConfig.PluginDir = pluginsPath
 	}
-
 	// Set logger
 	c2pConfig.Logger = option.logger
-
-	compDef, err := loadCompDef(componentPath)
-	if err != nil {
-		return nil, err
-	}
-	c2pConfig.ComponentDefinitions = []oscalTypes.ComponentDefinition{*compDef}
 	return c2pConfig, nil
 }
 
-func loadCompDef(path string) (*oscalTypes.ComponentDefinition, error) {
-	file, err := os.Open(path)
+func Target(option *Options) (*config.Target, error) {
+	compDef, err := loadCompDef(option.Definition)
 	if err != nil {
 		return nil, err
+	}
+	return config.NewTargetFromComponentDefinition(compDef)
+}
+
+func loadCompDef(path string) (oscalTypes.ComponentDefinition, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return oscalTypes.ComponentDefinition{}, err
 	}
 	defer file.Close()
 	compDef, err := models.NewComponentDefinition(file, validation.NewSchemaValidator())
 	if err != nil {
-		return nil, err
+		return oscalTypes.ComponentDefinition{}, err
 	}
-	return compDef, nil
+
+	if compDef == nil {
+		return oscalTypes.ComponentDefinition{}, errors.New("component definition cannot be nil")
+	}
+	return *compDef, nil
 }
 
 // Settings returns extracted compliance settings from a given component definition implementation using the C2PConfig.
-func Settings(frameworkConfig *config.C2PConfig, option *Options) (*settings.ImplementationSettings, error) {
+func Settings(option *Options) (*settings.ImplementationSettings, error) {
 	var implementation []oscalTypes.ControlImplementationSet
-	for _, comp := range frameworkConfig.ComponentDefinitions {
-		for _, cp := range *comp.Components {
-			if cp.ControlImplementations != nil {
-				implementation = append(implementation, *cp.ControlImplementations...)
-			}
+	compDef, err := loadCompDef(option.Definition)
+	if err != nil {
+		return nil, err
+	}
+	for _, cp := range *compDef.Components {
+		if cp.ControlImplementations != nil {
+			implementation = append(implementation, *cp.ControlImplementations...)
 		}
 	}
 	return settings.Framework(option.Name, implementation)

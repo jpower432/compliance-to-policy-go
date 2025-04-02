@@ -6,15 +6,11 @@
 package config
 
 import (
-	"os"
 	"testing"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/models"
-	"github.com/oscal-compass/oscal-sdk-go/validation"
+	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/stretchr/testify/require"
-
-	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 )
 
 func TestGetPluginIDFromComponent(t *testing.T) {
@@ -68,7 +64,8 @@ func TestGetPluginIDFromComponent(t *testing.T) {
 
 	for _, c := range tests {
 		t.Run(c.name, func(t *testing.T) {
-			id, err := GetPluginIDFromComponent(c.component)
+			compAdapter := components.NewDefinedComponentAdapter(c.component)
+			id, err := GetPluginIDFromComponent(compAdapter)
 			if c.wantError == "" {
 				require.NoError(t, err)
 				require.Equal(t, c.expected, id)
@@ -77,26 +74,4 @@ func TestGetPluginIDFromComponent(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestResolveOptions(t *testing.T) {
-	testDataPath := pkg.PathFromPkgDirectory("./testdata/oscal/component-definition-test.json")
-	testFile, err := os.Open(testDataPath)
-	require.NoError(t, err)
-	compDef, err := models.NewComponentDefinition(testFile, validation.NoopValidator{})
-	require.NoError(t, err)
-	config := &C2PConfig{
-		ComponentDefinitions: []oscalTypes.ComponentDefinition{
-			*compDef,
-		},
-	}
-
-	components, pluginMap, err := resolveOptions(config)
-	require.NoError(t, err)
-
-	expectedPluginMap := map[string]string{
-		"mypvpvalidator": "MyPVPValidator",
-	}
-	require.Len(t, components, 2)
-	require.Equal(t, expectedPluginMap, pluginMap)
 }

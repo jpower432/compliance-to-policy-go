@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package framework
+package report
 
 import (
 	"context"
@@ -29,19 +29,10 @@ type Reporter struct {
 	rulesStore rules.Store
 }
 
-func NewReporter(cfg *config.C2PConfig) (*Reporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	rulesStore, _, err := config.ResolveOptions(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func NewReporter(logger hclog.Logger, target *config.Target) (*Reporter, error) {
 	return &Reporter{
-		log:        cfg.Logger.Named("reporter"),
-		rulesStore: rulesStore,
+		log:        logger.Named("reporter"),
+		rulesStore: target.Store(),
 	}, nil
 }
 

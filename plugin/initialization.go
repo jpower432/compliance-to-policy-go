@@ -75,7 +75,7 @@ func ClientFactory(logger hclog.Logger) ClientFactoryFunc {
 }
 
 // NewPolicyPlugin dispenses a new instance of a policy plugin.
-func NewPolicyPlugin(pluginManifest Manifest, createClient ClientFactoryFunc) (policy.Provider, error) {
+func NewPolicyPlugin(pluginManifest Manifest, createClient ClientFactoryFunc) (policy.Aggregator, error) {
 	client, err := createClient(pluginManifest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create plugin client for %s: %w", pluginManifest.ID, err)
@@ -90,6 +90,26 @@ func NewPolicyPlugin(pluginManifest Manifest, createClient ClientFactoryFunc) (p
 		return nil, fmt.Errorf("failed to dispense plugin %s: %w", pluginManifest.ID, err)
 	}
 
-	p := raw.(policy.Provider)
+	p := raw.(policy.Aggregator)
+	return p, nil
+}
+
+// NewGeneratorPlugin dispenses a new instance of a policy plugin.
+func NewGeneratorPlugin(pluginManifest Manifest, createClient ClientFactoryFunc) (policy.Generator, error) {
+	client, err := createClient(pluginManifest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create plugin client for %s: %w", pluginManifest.ID, err)
+	}
+	rpcClient, err := client.Client()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plugin client for %s: %w", pluginManifest.ID, err)
+	}
+
+	raw, err := rpcClient.Dispense(GenerationPluginName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dispense plugin %s: %w", pluginManifest.ID, err)
+	}
+
+	p := raw.(policy.Generator)
 	return p, nil
 }
