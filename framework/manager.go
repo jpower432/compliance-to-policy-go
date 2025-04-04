@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/action"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
@@ -47,7 +48,7 @@ func NewPluginManager(cfg *config.C2PConfig) (*PluginManager, error) {
 
 // FindRequestedPlugins retrieves information for the plugins that have been requested
 // in the C2PConfig and returns the plugin manifests for use with LaunchPolicyPlugins().
-func (m *PluginManager) FindRequestedPlugins(target *config.Target, pluginType string) (plugin.Manifests, error) {
+func (m *PluginManager) FindRequestedPlugins(target *action.Target, pluginType string) (plugin.Manifests, error) {
 	m.log.Info(fmt.Sprintf("Searching for plugins in %s", m.pluginDir))
 
 	pluginManifests, err := plugin.FindPlugins(

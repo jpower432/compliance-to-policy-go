@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/action"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/report"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
@@ -104,7 +105,7 @@ func runResult2Policy(ctx context.Context, option *Options) error {
 	}
 	defer manager.Clean()
 
-	results, err := framework.AggregateResults(ctx, launchedPlugins, target)
+	results, err := action.AggregateResults(ctx, launchedPlugins, target)
 	if err != nil {
 		return err
 	}

@@ -48,6 +48,7 @@ var SupportedPlugins = map[string]plugin.Plugin{
 }
 
 var _ plugin.GRPCPlugin = (*PVPPlugin)(nil)
+var _ plugin.GRPCPlugin = (*GeneratorPlugin)(nil)
 
 // PVPPlugin is concrete implementation of the policy.Provider written in Go for use
 // with go-plugin.

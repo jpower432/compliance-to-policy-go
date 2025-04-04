@@ -19,7 +19,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/action"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
@@ -29,7 +29,7 @@ type Reporter struct {
 	rulesStore rules.Store
 }
 
-func NewReporter(logger hclog.Logger, target *config.Target) (*Reporter, error) {
+func NewReporter(logger hclog.Logger, target *action.Target) (*Reporter, error) {
 	return &Reporter{
 		log:        logger.Named("reporter"),
 		rulesStore: target.Store(),

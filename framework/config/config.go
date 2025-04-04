@@ -15,12 +15,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-const (
-	// Only validation components are plugins
-	pluginComponentType = "validation"
-	// DefaultPluginPath default location c2p will look for plugins
-	DefaultPluginPath = "c2p-plugins"
-)
+// DefaultPluginPath default location c2p will look for plugins
+const DefaultPluginPath = "c2p-plugins"
 
 // C2PConfig represents configuration options for the C2P framework.PluginManager.
 type C2PConfig struct {

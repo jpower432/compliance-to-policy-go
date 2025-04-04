@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package config
+package action
 
 import (
 	"errors"
@@ -17,6 +17,8 @@ import (
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
+
+const pluginComponentType = "validation"
 
 var ErrMissingProvider = errors.New("missing title for provider")
 
@@ -36,7 +38,9 @@ type Target struct {
 }
 
 func NewTargetFromComponentDefinition(compDef oscalTypes.ComponentDefinition) (*Target, error) {
-	target := &Target{}
+	target := &Target{
+		requestedPlugins: make(map[string]string),
+	}
 	var allComponents []components.Component
 	if compDef.Components == nil {
 		return target, fmt.Errorf("components cannot be empty")

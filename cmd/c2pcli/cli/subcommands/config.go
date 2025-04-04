@@ -14,6 +14,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/action"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 )
 
@@ -29,12 +30,12 @@ func Config(option *Options) (*config.C2PConfig, error) {
 	return c2pConfig, nil
 }
 
-func Target(option *Options) (*config.Target, error) {
+func Target(option *Options) (*action.Target, error) {
 	compDef, err := loadCompDef(option.Definition)
 	if err != nil {
 		return nil, err
 	}
-	return config.NewTargetFromComponentDefinition(compDef)
+	return action.NewTargetFromComponentDefinition(compDef)
 }
 
 func loadCompDef(path string) (oscalTypes.ComponentDefinition, error) {
