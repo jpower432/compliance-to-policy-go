@@ -44,6 +44,7 @@ Provide seamless integration with compliance frameworks and existing policy engi
 ## Supported Compliance Frameworks
 - [Open Security Controls Assessment Language (OSCAL)](https://pages.nist.gov/OSCAL/documentation/)
     - OSCAL standard provides a compliance framework and the corresponding set of key compliance artifacts expressed in machine processable formats enabling all compliance documents to be treated as code and therefore processed and managed in the same manner.
+- [Simplified Compliance Infrastructure (SCI)](https://github.com/revanite-io/sci)
 
 ## Supported Policy Engines
 - [Kyverno](https://kyverno.io/) (for Kubernetes resources)

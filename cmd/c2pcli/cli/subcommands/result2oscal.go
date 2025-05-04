@@ -45,7 +45,7 @@ func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
 			if err := options.Validate(); err != nil {
 				return err
 			}
-			return runResult2Policy(cmd.Context(), options)
+			return runResult2OSCAL(cmd.Context(), options)
 		},
 	}
 
@@ -56,7 +56,7 @@ func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
 	return command
 }
 
-func runResult2Policy(ctx context.Context, option *Options) error {
+func runResult2OSCAL(ctx context.Context, option *Options) error {
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err

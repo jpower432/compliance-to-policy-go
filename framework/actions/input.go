@@ -13,6 +13,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/revanite-io/sci/layer2"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
@@ -56,6 +57,14 @@ func NewContext(components []components.Component) (*InputContext, error) {
 		return inputCtx, err
 	}
 	inputCtx.rulesStore = store
+	return inputCtx, nil
+}
+
+// NewContextFromLayer2 returns an InputContext for the given Layer2 Catalog.
+func NewContextFromLayer2(catalog layer2.Catalog) (*InputContext, error) {
+	inputCtx := &InputContext{
+		requestedProviders: make(map[plugin.ID]string),
+	}
 	return inputCtx, nil
 }
 
