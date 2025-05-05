@@ -64,7 +64,6 @@ func getMethods(assessmentMethods []policy.ObservationByCheck) []layer4.Assessme
 				Status: layer4.Status(method.Subjects[0].Result.String()),
 			},
 			// Look into "MethodExecutor"
-
 		}
 		methods = append(methods, l4Assessment)
 	}

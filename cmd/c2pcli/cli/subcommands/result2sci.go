@@ -3,9 +3,12 @@ package subcommands
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/revanite-io/sci/layer2"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
@@ -31,6 +34,7 @@ func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 	}
 
 	fs := command.Flags()
+	fs.String(Catalog, "", "Path to Layer 2 SCI Catalog")
 	BindPluginFlags(fs)
 
 	return command
@@ -75,13 +79,39 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	evals, err := actions.Evaluate(ctx, inputContext, results)
+	var controls []layer2.Control
+	catalog, err := getCatalog(option.Catalog)
+	if err != nil {
+		return err
+	}
+	for _, family := range catalog.ControlFamilies {
+		controls = append(controls, family.Controls...)
+	}
+
+	evals, err := actions.Evaluate(ctx, inputContext, controls, results)
 	if err != nil {
 		return err
 	}
 
 	for _, eval := range evals {
-		fmt.Println(eval)
+		data, err := yaml.Marshal(eval)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stdout, string(data))
 	}
 	return nil
+}
+
+func getCatalog(filepath string) (layer2.Catalog, error) {
+	var catalog layer2.Catalog
+	yamlFile, err := os.ReadFile(filepath)
+	if err != nil {
+		return catalog, err
+	}
+	err = yaml.Unmarshal(yamlFile, &catalog)
+	if err != nil {
+		return catalog, err
+	}
+	return catalog, nil
 }
