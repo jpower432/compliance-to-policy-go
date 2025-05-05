@@ -1,6 +1,8 @@
 module github.com/oscal-compass/compliance-to-policy-go/v2
 
-go 1.23.0
+go 1.23.4
+
+toolchain go1.24.2
 
 require (
 	github.com/defenseunicorns/go-oscal v0.6.2
@@ -18,6 +20,7 @@ require (
 	github.com/onsi/gomega v1.34.1
 	github.com/oscal-compass/oscal-sdk-go v0.0.2
 	github.com/otiai10/copy v1.9.0
+	github.com/revanite-io/sci v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
@@ -144,6 +147,7 @@ require (
 	github.com/go-piv/piv-go v1.11.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/goccy/go-yaml v1.17.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
