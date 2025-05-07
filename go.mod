@@ -300,4 +300,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-replace github.com/revanite-io/sci => ../sci
+replace github.com/revanite-io/sci => github.com/trumant/sci v0.0.0-20250506175100-8feeaf8c048b
