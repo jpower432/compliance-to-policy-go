@@ -8,37 +8,25 @@ package actions
 import (
 	"context"
 
-	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/revanite-io/sci/layer2"
 	"github.com/revanite-io/sci/layer4"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
-func Evaluate(ctx context.Context, inputContext *InputContext, controls []layer2.Control, results []policy.PVPResult) ([]layer4.Evaluation, error) {
-	var evals []layer4.Evaluation
-	for _, result := range results {
-		eval, err := createEvaluation(ctx, inputContext.Store(), controls, result)
-		if err != nil {
-			return nil, err
-		}
-		evals = append(evals, eval)
-	}
-	return evals, nil
-}
-
-func createEvaluation(ctx context.Context, store rules.Store, controls []layer2.Control, result policy.PVPResult) (layer4.Evaluation, error) {
+func Evaluate(ctx context.Context, inputContext *InputContext, controls []layer2.Control, result policy.PVPResult) (layer4.Layer4, error) {
 	checksByRule := make(map[string][]policy.ObservationByCheck)
+	store := inputContext.Store()
 	for _, observationByCheck := range result.ObservationsByCheck {
 		rule, err := store.GetByCheckID(ctx, observationByCheck.CheckID)
 		if err != nil {
-			return layer4.Evaluation{}, err
+			return layer4.Layer4{}, err
 		}
 		checksByRule[rule.Rule.ID] = append(checksByRule[rule.Rule.ID], observationByCheck)
 	}
 
 	// Assuming rule will align with the requirement id
-	eval := layer4.Evaluation{}
+	eval := layer4.Layer4{}
 	for _, control := range controls {
 		controlEval := layer4.ControlEvaluation{
 			ControlID: control.Id,
@@ -63,7 +51,7 @@ func getMethods(assessmentMethods []policy.ObservationByCheck) []layer4.Assessme
 			Result: &layer4.AssessmentResult{
 				Status: layer4.Status(method.Subjects[0].Result.String()),
 			},
-			// Look into "MethodExecutor"
+			// Look into how to register "MethodExecutor" and complete Layer4 definition post-assessment.
 		}
 		methods = append(methods, l4Assessment)
 	}
