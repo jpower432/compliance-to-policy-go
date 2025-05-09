@@ -61,7 +61,7 @@ func NewContext(components []components.Component) (*InputContext, error) {
 }
 
 // NewContextFromLayer2 returns an InputContext for the given Layer2 Catalog.
-func NewContextFromLayer2(catalog layer2.Catalog) (*InputContext, error) {
+func NewContextFromLayer2(catalog layer2.Layer2) (*InputContext, error) {
 	inputCtx := &InputContext{
 		requestedProviders: make(map[plugin.ID]string),
 	}

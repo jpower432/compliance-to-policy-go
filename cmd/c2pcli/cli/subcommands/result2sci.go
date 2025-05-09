@@ -88,12 +88,11 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		controls = append(controls, family.Controls...)
 	}
 
-	evals, err := actions.Evaluate(ctx, inputContext, controls, results)
-	if err != nil {
-		return err
-	}
-
-	for _, eval := range evals {
+	for _, result := range results {
+		eval, err := actions.Evaluate(ctx, inputContext, controls, result)
+		if err != nil {
+			return err
+		}
 		data, err := yaml.Marshal(eval)
 		if err != nil {
 			return err
@@ -103,8 +102,8 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 	return nil
 }
 
-func getCatalog(filepath string) (layer2.Catalog, error) {
-	var catalog layer2.Catalog
+func getCatalog(filepath string) (layer2.Layer2, error) {
+	var catalog layer2.Layer2
 	yamlFile, err := os.ReadFile(filepath)
 	if err != nil {
 		return catalog, err
