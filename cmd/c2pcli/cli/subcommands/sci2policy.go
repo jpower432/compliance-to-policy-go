@@ -2,26 +2,22 @@ package subcommands
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/revanite-io/sci/layer2"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-func NewResult2SCI(logger hclog.Logger) *cobra.Command {
+func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
 	options.logger = logger
 
 	command := &cobra.Command{
-		Use:   "result2sci",
-		Short: "Transform policy result artifacts to SCI Layer 4 Evaluations.",
+		Use:   "oscal2policy",
+		Short: "Transform OSCAL to policy artifacts.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := options.Complete(cmd); err != nil {
 				return err
@@ -29,18 +25,17 @@ func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 			if err := options.Validate(); err != nil {
 				return err
 			}
-			return runResult2SCI(cmd.Context(), options)
+			return runSCI2Policy(cmd.Context(), options)
 		},
 	}
-
 	fs := command.Flags()
 	fs.String(Catalog, "", "Path to Layer 2 SCI Catalog")
 	BindPluginFlags(fs)
-
 	return command
 }
 
-func runResult2SCI(ctx context.Context, option *Options) error {
+// Intended output - code generation - plans and policy as code for the plan
+func runSCI2Policy(ctx context.Context, option *Options) error {
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
@@ -50,6 +45,7 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 	if err != nil {
 		return err
 	}
+
 	inputContext, err := Context(plan)
 	if err != nil {
 		return err
@@ -74,45 +70,10 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	results, err := actions.AggregateResults(ctx, inputContext, launchedPlugins)
+	err = actions.GeneratePolicy(ctx, inputContext, launchedPlugins)
 	if err != nil {
 		return err
 	}
 
-	var controls []layer2.Control
-	catalog, err := getCatalog(option.Catalog)
-	if err != nil {
-		return err
-	}
-	for _, family := range catalog.ControlFamilies {
-		controls = append(controls, family.Controls...)
-	}
-
-	for _, result := range results {
-		eval, err := actions.Evaluate(ctx, inputContext, controls, result)
-		if err != nil {
-			return err
-		}
-		eval.CatalogID = catalog.Metadata.Id
-		// TODO: Determine overall start and end time
-		data, err := yaml.Marshal(eval)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(os.Stdout, string(data))
-	}
 	return nil
-}
-
-func getCatalog(filepath string) (layer2.Layer2, error) {
-	var catalog layer2.Layer2
-	yamlFile, err := os.ReadFile(filepath)
-	if err != nil {
-		return catalog, err
-	}
-	err = yaml.Unmarshal(yamlFile, &catalog)
-	if err != nil {
-		return catalog, err
-	}
-	return catalog, nil
 }

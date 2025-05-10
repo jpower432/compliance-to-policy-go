@@ -47,6 +47,7 @@ func New() *cobra.Command {
 		subcommands.NewOSCAL2Policy(logger),
 		subcommands.NewResult2OSCAL(logger),
 		subcommands.NewResult2SCI(logger),
+		subcommands.NewSCI2Policy(logger),
 	)
 	command.PersistentFlags().BoolVar(&debug, "debug", false, "Run with debug log level")
 

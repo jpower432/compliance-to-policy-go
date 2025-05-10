@@ -41,6 +41,11 @@ func Evaluate(ctx context.Context, inputContext *InputContext, controls []layer2
 	return eval, nil
 }
 
+func PlanEvaluation(ctx context.Context, controls layer2.Layer2, inputContext *InputContext) (layer4.Layer4, error) {
+	eval := layer4.Layer4{}
+	return eval, nil
+}
+
 func getMethods(assessmentMethods []policy.ObservationByCheck) []layer4.AssessmentMethod {
 	var methods []layer4.AssessmentMethod
 	for _, method := range assessmentMethods {
