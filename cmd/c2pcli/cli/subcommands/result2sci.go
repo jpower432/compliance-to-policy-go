@@ -1,3 +1,8 @@
+/*
+ Copyright 2025 The OSCAL Compass Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package subcommands
 
 import (
@@ -6,7 +11,6 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/revanite-io/sci/layer2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -14,6 +18,10 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
+
+type Policy struct {
+	refs []actions.PlanRef `yaml:"refs"`
+}
 
 func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
@@ -34,7 +42,8 @@ func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 	}
 
 	fs := command.Flags()
-	fs.String(Catalog, "", "Path to Layer 2 SCI Catalog")
+	// Replace with Layer 3 policy
+	fs.String(AssessmentPlan, "", "Path to L3 policy")
 	BindPluginFlags(fs)
 
 	return command
@@ -45,20 +54,21 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 	if err != nil {
 		return err
 	}
-
-	plan, _, err := createOrGetPlan(ctx, option)
-	if err != nil {
-		return err
-	}
-	inputContext, err := Context(plan)
-	if err != nil {
-		return err
-	}
-
 	manager, err := framework.NewPluginManager(frameworkConfig)
 	if err != nil {
 		return err
 	}
+
+	policy, err := getPolicy(option.Plan)
+	if err != nil {
+		return err
+	}
+
+	inputContext, err := actions.NewContextFromRefs(policy.refs...)
+	if err != nil {
+		return err
+	}
+
 	foundPlugins, err := manager.FindRequestedPlugins(inputContext.RequestedProviders())
 	if err != nil {
 		return err
@@ -74,45 +84,33 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	results, err := actions.AggregateResults(ctx, inputContext, launchedPlugins)
-	if err != nil {
-		return err
-	}
-
-	var controls []layer2.Control
-	catalog, err := getCatalog(option.Catalog)
-	if err != nil {
-		return err
-	}
-	for _, family := range catalog.ControlFamilies {
-		controls = append(controls, family.Controls...)
-	}
-
-	for _, result := range results {
-		eval, err := actions.Evaluate(ctx, inputContext, controls, result)
+	for _, ref := range policy.refs {
+		provider := launchedPlugins[ref.PluginID]
+		rs, err := actions.Evaluate(ctx, inputContext, ref, provider)
 		if err != nil {
 			return err
 		}
-		eval.CatalogID = catalog.Metadata.Id
-		// TODO: Determine overall start and end time
-		data, err := yaml.Marshal(eval)
+		data, err := yaml.Marshal(ref.Plan)
 		if err != nil {
 			return err
 		}
+		fmt.Println(rs.ID)
 		fmt.Fprintln(os.Stdout, string(data))
 	}
+
 	return nil
 }
 
-func getCatalog(filepath string) (layer2.Layer2, error) {
-	var catalog layer2.Layer2
+// TODO: Also load plans here
+func getPolicy(filepath string) (Policy, error) {
+	var policy Policy
 	yamlFile, err := os.ReadFile(filepath)
 	if err != nil {
-		return catalog, err
+		return policy, err
 	}
-	err = yaml.Unmarshal(yamlFile, &catalog)
+	err = yaml.Unmarshal(yamlFile, &policy)
 	if err != nil {
-		return catalog, err
+		return policy, err
 	}
-	return catalog, nil
+	return policy, nil
 }

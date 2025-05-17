@@ -1,15 +1,25 @@
+/*
+ Copyright 2025 The OSCAL Compass Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package subcommands
 
 import (
-	"context"
+	"fmt"
+	"os"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/revanite-io/sci/layer2"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
+
+var pluginName plugin.ID
 
 func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
@@ -25,28 +35,24 @@ func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 			if err := options.Validate(); err != nil {
 				return err
 			}
-			return runSCI2Policy(cmd.Context(), options)
+			return runSCI2Policy(options)
 		},
 	}
 	fs := command.Flags()
 	fs.String(Catalog, "", "Path to Layer 2 SCI Catalog")
+	fs.StringVar((*string)(&pluginName), "plugin", "", "Plugin to use")
 	BindPluginFlags(fs)
 	return command
 }
 
 // Intended output - code generation - plans and policy as code for the plan
-func runSCI2Policy(ctx context.Context, option *Options) error {
+func runSCI2Policy(option *Options) error {
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
 	}
 
-	plan, _, err := createOrGetPlan(ctx, option)
-	if err != nil {
-		return err
-	}
-
-	inputContext, err := Context(plan)
+	catalog, err := getCatalog(option.Catalog)
 	if err != nil {
 		return err
 	}
@@ -55,7 +61,7 @@ func runSCI2Policy(ctx context.Context, option *Options) error {
 	if err != nil {
 		return err
 	}
-	foundPlugins, err := manager.FindRequestedPlugins(inputContext.RequestedProviders())
+	foundPlugins, err := manager.FindRequestedPlugins([]plugin.ID{pluginName})
 	if err != nil {
 		return err
 	}
@@ -70,10 +76,33 @@ func runSCI2Policy(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	err = actions.GeneratePolicy(ctx, inputContext, launchedPlugins)
+	eval, err := actions.GenerateEvaluation(catalog, launchedPlugins[pluginName])
+	if err != nil {
+		return err
+	}
+
+	data, err := yaml.Marshal(eval)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintln(os.Stdout, data)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getCatalog(filepath string) (layer2.Layer2, error) {
+	var catalog layer2.Layer2
+	yamlFile, err := os.ReadFile(filepath)
+	if err != nil {
+		return catalog, err
+	}
+	err = yaml.Unmarshal(yamlFile, &catalog)
+	if err != nil {
+		return catalog, err
+	}
+	return catalog, nil
 }

@@ -12,11 +12,13 @@ import (
 	"os"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
+	"github.com/goccy/go-yaml"
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/transformers"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
+	"github.com/revanite-io/sci/layer2"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
@@ -108,4 +110,17 @@ func loadPlan(path string) (*oscalTypes.AssessmentPlan, error) {
 		return nil, err
 	}
 	return plan, nil
+}
+
+func loadCatalog(filepath string) (layer2.Layer2, error) {
+	var catalog layer2.Layer2
+	yamlFile, err := os.ReadFile(filepath)
+	if err != nil {
+		return catalog, err
+	}
+	err = yaml.Unmarshal(yamlFile, &catalog)
+	if err != nil {
+		return catalog, err
+	}
+	return catalog, nil
 }

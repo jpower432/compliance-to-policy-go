@@ -7,43 +7,50 @@ package actions
 
 import (
 	"context"
+	"fmt"
+	"time"
 
-	"github.com/revanite-io/sci/layer2"
+	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/revanite-io/sci/layer4"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/resource"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
-func Evaluate(ctx context.Context, inputContext *InputContext, controls []layer2.Control, result policy.PVPResult) (layer4.Layer4, error) {
+// Evaluate updates the given Layer 4 evaluation based on PVP Results.
+func Evaluate(ctx context.Context, inputContext *InputContext, ref PlanRef, provider policy.Provider) (resource.Resource, error) {
+	ref.Plan.StartTime = time.Now()
+
+	appliedRuleSet, err := settings.ApplyToComponent(ctx, ref.Service, inputContext.Store(), inputContext.Settings)
+	if err != nil {
+		return resource.Resource{}, fmt.Errorf("failed to get rule sets for component %s: %w", ref.Service, err)
+	}
+
+	results, err := provider.GetResults(appliedRuleSet)
+	if err != nil {
+		return resource.Resource{}, fmt.Errorf("plugin %v: %w", ref.PluginID, err)
+	}
+
 	checksByRule := make(map[string][]policy.ObservationByCheck)
 	store := inputContext.Store()
-	for _, observationByCheck := range result.ObservationsByCheck {
+	for _, observationByCheck := range results.ObservationsByCheck {
 		rule, err := store.GetByCheckID(ctx, observationByCheck.CheckID)
 		if err != nil {
-			return layer4.Layer4{}, err
+			return resource.Resource{}, err
 		}
 		checksByRule[rule.Rule.ID] = append(checksByRule[rule.Rule.ID], observationByCheck)
 	}
-
-	// Assuming rule will align with the requirement id
-	eval := layer4.Layer4{}
-	for _, control := range controls {
-		controlEval := layer4.ControlEvaluation{
-			ControlID: control.Id,
-		}
-		for _, req := range control.AssessmentRequirements {
-			assessment := layer4.ForControlRequirement(control.Id, req)
-			checks := checksByRule[req.Id]
+	for _, controlEvals := range ref.Plan.ControlEvaluations {
+		for i := range controlEvals.Assessments {
+			assessment := controlEvals.Assessments[i]
+			checks := checksByRule[assessment.RequirementID]
 			assessment.Methods = getMethods(checks)
 		}
-		eval.ControlEvaluations = append(eval.ControlEvaluations, controlEval)
 	}
-	return eval, nil
-}
 
-func PlanEvaluation(ctx context.Context, controls layer2.Layer2, inputContext *InputContext) (layer4.Layer4, error) {
-	eval := layer4.Layer4{}
-	return eval, nil
+	ref.Plan.EndTime = time.Now()
+
+	return resource.Resource{ID: ref.Service}, nil
 }
 
 func getMethods(assessmentMethods []policy.ObservationByCheck) []layer4.AssessmentMethod {
@@ -56,7 +63,6 @@ func getMethods(assessmentMethods []policy.ObservationByCheck) []layer4.Assessme
 			Result: &layer4.AssessmentResult{
 				Status: layer4.Status(method.Subjects[0].Result.String()),
 			},
-			// Look into how to register "MethodExecutor" and complete Layer4 definition post-assessment.
 		}
 		methods = append(methods, l4Assessment)
 	}
