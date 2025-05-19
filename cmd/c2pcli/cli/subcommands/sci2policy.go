@@ -8,9 +8,9 @@ package subcommands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/revanite-io/sci/layer2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -19,15 +19,13 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-var pluginName plugin.ID
-
 func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
 	options.logger = logger
 
 	command := &cobra.Command{
-		Use:   "oscal2policy",
-		Short: "Transform OSCAL to policy artifacts.",
+		Use:   "sci2policy",
+		Short: "Transform SCI to policy artifacts.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := options.Complete(cmd); err != nil {
 				return err
@@ -39,9 +37,11 @@ func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 		},
 	}
 	fs := command.Flags()
-	fs.String(Catalog, "", "Path to Layer 2 SCI Catalog")
-	fs.StringVar((*string)(&pluginName), "plugin", "", "Plugin to use")
-	BindPluginFlags(fs)
+	// Replace with Layer 3 policy
+	fs.StringP("plugin-dir", "p", "c2p-plugins", "path to plugin directory. Defaults to `c2p-plugins`.")
+	fs.StringP(AssessmentPlan, "a", "", "path to assessment-plan.json. This option cannot be used with --component-definition.")
+	fs.StringP("out", "o", "-", "path to output directory. Use '-' for stdout. Default '-'.")
+	fs.StringP(ConfigPath, "c", "c2p-config.yaml", "path to the configuration for the C2P CLI.")
 	return command
 }
 
@@ -52,7 +52,12 @@ func runSCI2Policy(option *Options) error {
 		return err
 	}
 
-	catalog, err := getCatalog(option.Catalog)
+	policy, err := getPolicy(option.Plan)
+	if err != nil {
+		return err
+	}
+
+	inputContext, err := actions.NewContextFromRefs(policy.Refs...)
 	if err != nil {
 		return err
 	}
@@ -61,7 +66,7 @@ func runSCI2Policy(option *Options) error {
 	if err != nil {
 		return err
 	}
-	foundPlugins, err := manager.FindRequestedPlugins([]plugin.ID{pluginName})
+	foundPlugins, err := manager.FindRequestedPlugins(inputContext.RequestedProviders())
 	if err != nil {
 		return err
 	}
@@ -76,33 +81,35 @@ func runSCI2Policy(option *Options) error {
 		return err
 	}
 
-	eval, err := actions.GenerateEvaluation(catalog, launchedPlugins[pluginName])
-	if err != nil {
-		return err
-	}
+	for _, cat := range policy.Catalogs {
+		catalog, err := getCatalog(cat)
+		if err != nil {
+			return err
+		}
+		for _, ref := range policy.Refs {
+			eval, err := actions.GenerateEvaluation(catalog, launchedPlugins[ref.PluginID])
+			if err != nil {
+				return err
+			}
 
-	data, err := yaml.Marshal(eval)
-	if err != nil {
-		return err
-	}
+			data, err := yaml.Marshal(eval)
+			if err != nil {
+				return err
+			}
 
-	_, err = fmt.Fprintln(os.Stdout, data)
-	if err != nil {
-		return err
+			out := option.Output
+			if out == "-" {
+				fmt.Fprintln(os.Stdout, string(data))
+			} else {
+				err := os.MkdirAll(out, os.ModePerm)
+				if err != nil {
+					return err
+				}
+				filePath := filepath.Clean(filepath.Join(out, fmt.Sprintf("%s.yml", ref.Service)))
+				return os.WriteFile(filePath, data, os.ModePerm)
+			}
+		}
 	}
 
 	return nil
-}
-
-func getCatalog(filepath string) (layer2.Layer2, error) {
-	var catalog layer2.Layer2
-	yamlFile, err := os.ReadFile(filepath)
-	if err != nil {
-		return catalog, err
-	}
-	err = yaml.Unmarshal(yamlFile, &catalog)
-	if err != nil {
-		return catalog, err
-	}
-	return catalog, nil
 }

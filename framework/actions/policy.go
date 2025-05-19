@@ -7,7 +7,6 @@ package actions
 
 import (
 	"context"
-	"io"
 
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
@@ -23,10 +22,10 @@ type PlanRef struct {
 	Loader   Loader
 }
 
-type Loader func(rdr io.Reader) (*layer4.Layer4, error)
+type Loader func() (*layer4.Layer4, error)
 
-func (r *PlanRef) Load(rdr io.Reader) error {
-	plan, err := r.Loader(rdr)
+func (r *PlanRef) Load() error {
+	plan, err := r.Loader()
 	if err != nil {
 		return err
 	}

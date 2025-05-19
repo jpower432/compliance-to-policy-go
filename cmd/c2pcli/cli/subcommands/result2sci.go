@@ -9,8 +9,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/revanite-io/sci/layer4"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -19,9 +21,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-type Policy struct {
-	refs []actions.PlanRef `yaml:"refs"`
-}
+var evalDir string
 
 func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
@@ -42,10 +42,12 @@ func NewResult2SCI(logger hclog.Logger) *cobra.Command {
 	}
 
 	fs := command.Flags()
-	// Replace with Layer 3 policy
-	fs.String(AssessmentPlan, "", "Path to L3 policy")
-	BindPluginFlags(fs)
 
+	fs.StringP("plugin-dir", "p", "c2p-plugins", "path to plugin directory. Defaults to `c2p-plugins`.")
+	fs.StringP(AssessmentPlan, "a", "", "path to assessment-plan.json. This option cannot be used with --component-definition.")
+	fs.StringP("out", "o", "-", "path to output directory. Use '-' for stdout. Default '-'.")
+	fs.StringP(ConfigPath, "c", "c2p-config.yaml", "path to the configuration for the C2P CLI.")
+	fs.StringVarP(&evalDir, "eval-dir", "e", "", "Location of evaluation files")
 	return command
 }
 
@@ -64,7 +66,7 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	inputContext, err := actions.NewContextFromRefs(policy.refs...)
+	inputContext, err := actions.NewContextFromRefs(policy.Refs...)
 	if err != nil {
 		return err
 	}
@@ -84,8 +86,24 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	for _, ref := range policy.refs {
+	for _, ref := range policy.Refs {
 		provider := launchedPlugins[ref.PluginID]
+		// Lazily load evals
+		ref.Loader = func() (*layer4.Layer4, error) {
+			var l4Eval layer4.Layer4
+			filePath := filepath.Clean(filepath.Join(option.Output, fmt.Sprintf("%s.yml", ref.Service)))
+			file, err := os.Open(filePath)
+			if err != nil {
+				return nil, err
+			}
+			decoder := yaml.NewDecoder(file)
+
+			err = decoder.Decode(&l4Eval)
+			if err != nil {
+				return nil, err
+			}
+			return &l4Eval, nil
+		}
 		rs, err := actions.Evaluate(ctx, inputContext, ref, provider)
 		if err != nil {
 			return err
@@ -94,23 +112,18 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(rs.ID)
-		fmt.Fprintln(os.Stdout, string(data))
+		out := option.Output
+		if out == "-" {
+			fmt.Fprintln(os.Stdout, string(data))
+		} else {
+			err := os.MkdirAll(out, os.ModeDir)
+			if err != nil {
+				return err
+			}
+			filePath := filepath.Clean(filepath.Join(out, fmt.Sprintf("%s.yml", rs.ID)))
+			return os.WriteFile(filePath, data, os.ModePerm)
+		}
 	}
 
 	return nil
-}
-
-// TODO: Also load plans here
-func getPolicy(filepath string) (Policy, error) {
-	var policy Policy
-	yamlFile, err := os.ReadFile(filepath)
-	if err != nil {
-		return policy, err
-	}
-	err = yaml.Unmarshal(yamlFile, &policy)
-	if err != nil {
-		return policy, err
-	}
-	return policy, nil
 }

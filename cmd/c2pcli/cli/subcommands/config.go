@@ -112,7 +112,7 @@ func loadPlan(path string) (*oscalTypes.AssessmentPlan, error) {
 	return plan, nil
 }
 
-func loadCatalog(filepath string) (layer2.Layer2, error) {
+func getCatalog(filepath string) (layer2.Layer2, error) {
 	var catalog layer2.Layer2
 	yamlFile, err := os.ReadFile(filepath)
 	if err != nil {
@@ -123,4 +123,26 @@ func loadCatalog(filepath string) (layer2.Layer2, error) {
 		return catalog, err
 	}
 	return catalog, nil
+}
+
+// TODO: Also load plans here
+func getPolicy(filepath string) (Policy, error) {
+	var policy Policy
+	yamlFile, err := os.ReadFile(filepath)
+	if err != nil {
+		return policy, err
+	}
+	err = yaml.Unmarshal(yamlFile, &policy)
+	if err != nil {
+		return policy, err
+	}
+	return policy, nil
+}
+
+// Policy is a WIP policy implementation while SCI Layer 3 is under development.
+// For prototyping there is 1:1 relationship
+// between the target and validator.
+type Policy struct {
+	Catalogs []string          `yaml:"catalogs"`
+	Refs     []actions.PlanRef `yaml:"services"`
 }

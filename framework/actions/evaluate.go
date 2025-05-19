@@ -19,13 +19,19 @@ import (
 
 // Evaluate updates the given Layer 4 evaluation based on PVP Results.
 func Evaluate(ctx context.Context, inputContext *InputContext, ref PlanRef, provider policy.Provider) (resource.Resource, error) {
+	if ref.Plan == nil {
+		err := ref.Load()
+		if err != nil {
+			return resource.Resource{}, err
+		}
+	}
+
 	ref.Plan.StartTime = time.Now()
 
 	appliedRuleSet, err := settings.ApplyToComponent(ctx, ref.Service, inputContext.Store(), inputContext.Settings)
 	if err != nil {
 		return resource.Resource{}, fmt.Errorf("failed to get rule sets for component %s: %w", ref.Service, err)
 	}
-
 	results, err := provider.GetResults(appliedRuleSet)
 	if err != nil {
 		return resource.Resource{}, fmt.Errorf("plugin %v: %w", ref.PluginID, err)
@@ -40,6 +46,7 @@ func Evaluate(ctx context.Context, inputContext *InputContext, ref PlanRef, prov
 		}
 		checksByRule[rule.Rule.ID] = append(checksByRule[rule.Rule.ID], observationByCheck)
 	}
+
 	for _, controlEvals := range ref.Plan.ControlEvaluations {
 		for i := range controlEvals.Assessments {
 			assessment := controlEvals.Assessments[i]

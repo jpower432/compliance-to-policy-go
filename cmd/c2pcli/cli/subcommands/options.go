@@ -78,9 +78,8 @@ func (o *Options) Complete(cmd *cobra.Command) error {
 		if err := viper.ReadInConfig(); err != nil {
 			return err
 		}
-		return viper.Unmarshal(o)
 	}
-	return nil
+	return viper.Unmarshal(o)
 }
 
 // Validate the completed Options struct
