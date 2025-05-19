@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/revanite-io/sci/layer4"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -55,6 +56,16 @@ func runSCI2Policy(option *Options) error {
 	policy, err := getPolicy(option.Plan)
 	if err != nil {
 		return err
+	}
+
+	// Set loaders
+	// TODO: Find a way to make this optional
+	for i := range policy.Refs {
+		// Lazily load evals
+		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
+			var l4Eval layer4.Layer4
+			return &l4Eval, nil
+		}
 	}
 
 	inputContext, err := actions.NewContextFromRefs(policy.Refs...)

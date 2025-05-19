@@ -4,7 +4,6 @@ Uses the C2P Plugin API to continuously collect, process, and export evaluation 
 
 # TODO List
 
-- Policy config testdata and loading
 - Complete Evaluation Attestor
 
 # Overlapping concepts with OSCAL

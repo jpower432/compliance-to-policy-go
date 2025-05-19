@@ -66,6 +66,27 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 		return err
 	}
 
+	// Set loaders
+	for i := range policy.Refs {
+
+		// Lazily load evals
+		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
+			var l4Eval layer4.Layer4
+			filePath := filepath.Clean(filepath.Join(option.Output, fmt.Sprintf("%s.yml", policy.Refs[i].Service)))
+			file, err := os.Open(filePath)
+			if err != nil {
+				return nil, err
+			}
+			decoder := yaml.NewDecoder(file)
+
+			err = decoder.Decode(&l4Eval)
+			if err != nil {
+				return nil, err
+			}
+			return &l4Eval, nil
+		}
+	}
+
 	inputContext, err := actions.NewContextFromRefs(policy.Refs...)
 	if err != nil {
 		return err
@@ -88,22 +109,6 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 
 	for _, ref := range policy.Refs {
 		provider := launchedPlugins[ref.PluginID]
-		// Lazily load evals
-		ref.Loader = func() (*layer4.Layer4, error) {
-			var l4Eval layer4.Layer4
-			filePath := filepath.Clean(filepath.Join(option.Output, fmt.Sprintf("%s.yml", ref.Service)))
-			file, err := os.Open(filePath)
-			if err != nil {
-				return nil, err
-			}
-			decoder := yaml.NewDecoder(file)
-
-			err = decoder.Decode(&l4Eval)
-			if err != nil {
-				return nil, err
-			}
-			return &l4Eval, nil
-		}
 		rs, err := actions.Evaluate(ctx, inputContext, ref, provider)
 		if err != nil {
 			return err
@@ -124,6 +129,5 @@ func runResult2SCI(ctx context.Context, option *Options) error {
 			return os.WriteFile(filePath, data, os.ModePerm)
 		}
 	}
-
 	return nil
 }
