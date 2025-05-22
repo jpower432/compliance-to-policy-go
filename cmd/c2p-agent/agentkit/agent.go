@@ -2,8 +2,6 @@ package agentkit
 
 import (
 	"context"
-	"errors"
-	"sync"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/resource"
@@ -46,48 +44,25 @@ func (a *Agent) Run(ctx context.Context, opts ...RunOption) error {
 		opt(&options)
 	}
 
-	var wg sync.WaitGroup
-	errs := make(chan error)
-	errsDone := make(chan struct{})
+	inputContext, err := actions.NewContextFromRefs(a.plan)
+	if err != nil {
+		return err
+	}
 
-	var resultErrs []error
-	go func() {
-		for err := range errs {
-			resultErrs = append(resultErrs, err)
-		}
-		errsDone <- struct{}{}
-	}()
+	rs, err := actions.Evaluate(ctx, inputContext, a.plan, a.provider)
+	if err != nil {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	artifact := resource.NewAttestation(options.exportURL)
+	err = artifact.Attach(rs, *a.plan.Plan)
+	if err != nil {
+		return err
+	}
 
-		inputContext, err := actions.NewContextFromRefs(a.plan)
-		if err != nil {
-			errs <- err
-		}
-
-		rs, err := actions.Evaluate(ctx, inputContext, a.plan, a.provider)
-		if err != nil {
-			errs <- err
-		}
-
-		artifact := resource.NewAttestation(options.exportURL)
-		err = artifact.Attach(rs, *a.plan.Plan)
-		if err != nil {
-			errs <- err
-		}
-
-		err = artifact.Export(ctx)
-		if err != nil {
-			errs <- err
-		}
-	}()
-
-	wg.Wait()
-	close(errs)
-
-	<-errsDone
-
-	return errors.Join(resultErrs...)
+	err = artifact.Export(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
