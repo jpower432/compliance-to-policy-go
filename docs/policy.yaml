@@ -1,0 +1,5 @@
+catalogs:
+  - ./docs/test-catalog.yaml
+services:
+  - service: test-kubernetes
+    pluginID: kyverno
