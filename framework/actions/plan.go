@@ -12,6 +12,7 @@ import (
 
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
+	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/revanite-io/sci/layer4"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
@@ -48,6 +49,7 @@ func NewContextFromRefs(refs ...PlanRef) (*InputContext, error) {
 		return inputCtx, err
 	}
 	inputCtx.rulesStore = store
+	inputCtx.Settings = store.Settings()
 	return inputCtx, nil
 }
 
@@ -154,4 +156,12 @@ func (p *refStore) FindByComponent(ctx context.Context, componentId string) ([]e
 	}
 
 	return ruleSets, nil
+}
+
+func (p *refStore) Settings() settings.Settings {
+	r := map[string]struct{}{}
+	for rule := range p.nodes {
+		r[rule] = struct{}{}
+	}
+	return settings.NewSettings(r, nil)
 }
