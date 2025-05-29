@@ -8,6 +8,7 @@ require (
 	github.com/defenseunicorns/go-oscal v0.6.2
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/go-viper/mapstructure/v2 v2.2.1
+	github.com/goccy/go-yaml v1.17.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
@@ -16,6 +17,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/oscal-compass/oscal-sdk-go v0.0.2
 	github.com/otiai10/copy v1.14.1
+	github.com/revanite-io/sci v0.3.7-0.20250514220423-fdddc5f50feb
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
@@ -23,6 +25,7 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.33.0
 	k8s.io/apimachinery v0.33.0
@@ -287,7 +290,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.33.0 // indirect
 	k8s.io/client-go v0.33.0 // indirect
 	k8s.io/component-base v0.33.0 // indirect
@@ -302,3 +304,5 @@ require (
 	sigs.k8s.io/release-utils v0.11.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
+
+replace github.com/revanite-io/sci => github.com/trumant/sci v0.0.0-20250506175100-8feeaf8c048b

@@ -6,4 +6,5 @@
 // Package actions defines composable actions that can be performed to process and create OSCAL content.
 // The most common workflow includes:
 // GeneratePolicy - AggregateResults - Report
+// GenerateEvaluationPlan - Evaluate - Attest
 package actions

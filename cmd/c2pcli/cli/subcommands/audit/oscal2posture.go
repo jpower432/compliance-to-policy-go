@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package subcommands
+package audit
 
 import (
 	"errors"
@@ -15,47 +15,48 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/options"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/posture"
 )
 
 func NewOSCAL2Posture(logger hclog.Logger) *cobra.Command {
-	options := NewOptions()
-	options.logger = logger
+	option := options.NewOptions()
 
 	command := &cobra.Command{
 		Use:   "oscal2posture",
 		Short: "Generate Compliance Posture from OSCAL artifacts.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := options.Complete(cmd); err != nil {
+			if err := option.Complete(cmd, logger); err != nil {
 				return err
 			}
-			if err := validateOSCAL2Posture(options); err != nil {
+			if err := validateOSCAL2Posture(option); err != nil {
 				return err
 			}
-			return runOSCAL2Posture(options)
+			return runOSCAL2Posture(option)
 		},
 	}
 	fs := command.Flags()
-	BindCommonFlags(fs)
-	fs.String(Catalog, "", "path to catalog.json")
+	options.BindCommonFlags(fs)
+	fs.String(options.Catalog, "", "path to catalog.json")
 	fs.StringP("assessment-results", "a", "./assessment-results.json", "path to assessment-results.json")
+	fs.StringP(options.ComponentDefinition, "d", "", "path to component-definition.json file. This option cannot be used with --assessment-plan.")
 	fs.StringP("out", "o", "-", "path to output file. Use '-' for stdout. Default '-'.")
 	return command
 }
 
 // validateOSCAL2Posture runs validation specific to the OSCAL2Posture command.
-func validateOSCAL2Posture(options *Options) error {
+func validateOSCAL2Posture(option *options.Options) error {
 	var errs []error
-	if options.Catalog == "" {
-		errs = append(errs, &ConfigError{Option: Catalog})
+	if option.Catalog == "" {
+		errs = append(errs, &options.ConfigError{Option: options.Catalog})
 	}
-	if options.Definition == "" {
-		errs = append(errs, &ConfigError{Option: ComponentDefinition})
+	if option.Definition == "" {
+		errs = append(errs, &options.ConfigError{Option: options.ComponentDefinition})
 	}
 	return errors.Join(errs...)
 }
 
-func runOSCAL2Posture(option *Options) error {
+func runOSCAL2Posture(option *options.Options) error {
 	schemaValidator := validation.NewSchemaValidator()
 	arFile, err := os.Open(option.AssessmentResults)
 	if err != nil {
@@ -87,7 +88,7 @@ func runOSCAL2Posture(option *Options) error {
 		return fmt.Errorf("error loading component definition: %w", err)
 	}
 
-	r := framework.NewOscal2Posture(assessmentResults, catalog, compDef, option.logger)
+	r := posture.NewOscal2Posture(assessmentResults, catalog, compDef, option.Logger())
 	data, err := r.Generate()
 	if err != nil {
 		return err
@@ -97,7 +98,7 @@ func runOSCAL2Posture(option *Options) error {
 	if out == "-" {
 		fmt.Fprintln(os.Stdout, string(data))
 	} else {
-		return os.WriteFile(out, data, os.ModePerm)
+		return os.WriteFile(out, data, 0600)
 	}
 	return nil
 }

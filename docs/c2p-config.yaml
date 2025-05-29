@@ -1,4 +1,3 @@
-component-definition: ./pkg/testdata/oscal/component-definition-heterogeneous.json
 catalog: ./pkg/testdata/oscal/catalog.json
 plugins:
   ocm:

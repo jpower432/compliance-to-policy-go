@@ -14,51 +14,57 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package subcommands
+package eval
 
 import (
 	"context"
+	"fmt"
 
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/options"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-func NewOSCAL2Policy(logger hclog.Logger) *cobra.Command {
-	options := NewOptions()
-	options.logger = logger
-
+func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
+	option := options.NewOptions()
 	command := &cobra.Command{
-		Use:   "oscal2policy",
-		Short: "Transform OSCAL to policy artifacts.",
+		Use:   "result2oscal",
+		Short: "Transform policy result artifacts to OSCAL Assessment Results.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := options.Complete(cmd); err != nil {
+			if err := option.Complete(cmd, logger); err != nil {
 				return err
 			}
-			if err := options.Validate(); err != nil {
+			if err := option.Validate(); err != nil {
 				return err
 			}
-			return runOSCAL2Policy(cmd.Context(), options)
+			return runResult2OSCAL(cmd.Context(), option)
 		},
 	}
-	BindPluginFlags(command.Flags())
+	fs := command.Flags()
+	fs.StringP("out", "o", "./assessment-results.json", "path to output OSCAL Assessment Results")
+	options.BindPluginFlags(fs)
+	options.BindOSCALFlags(fs)
+
 	return command
 }
 
-func runOSCAL2Policy(ctx context.Context, option *Options) error {
+func runResult2OSCAL(ctx context.Context, option *options.Options) error {
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
 	}
 
-	plan, _, err := createOrGetPlan(ctx, option)
+	plan, href, err := createOrGetPlan(ctx, option)
 	if err != nil {
 		return err
 	}
-
 	inputContext, err := Context(plan)
 	if err != nil {
 		return err
@@ -83,10 +89,33 @@ func runOSCAL2Policy(ctx context.Context, option *Options) error {
 		return err
 	}
 
-	err = actions.GeneratePolicy(ctx, inputContext, launchedPlugins)
+	results, err := actions.AggregateResults(ctx, inputContext, launchedPlugins)
 	if err != nil {
 		return err
 	}
 
+	assessmentResults, err := actions.Report(ctx, inputContext, href, *plan, results)
+	if err != nil {
+		return err
+	}
+
+	oscalModels := oscalTypes.OscalModels{
+		AssessmentResults: assessmentResults,
+	}
+
+	logger := option.Logger()
+
+	// Validate before writing out
+	logger.Info("Validating generated assessment results")
+	validator := validation.NewSchemaValidator()
+	if err := validator.Validate(oscalModels); err != nil {
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Writing assessment results to %s.", option.Output))
+	err = pkg.WriteObjToJsonFile(option.Output, oscalModels)
+	if err != nil {
+		return err
+	}
 	return nil
 }
