@@ -6,11 +6,14 @@
 package eval
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/revanite-io/sci/layer2"
 	"github.com/revanite-io/sci/layer4"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -18,6 +21,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/options"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/policy"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
@@ -31,7 +35,7 @@ func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 			if err := option.Complete(cmd, logger); err != nil {
 				return err
 			}
-			return runSCI2Policy(option)
+			return runSCI2Policy(cmd.Context(), option)
 		},
 	}
 	fs := command.Flags()
@@ -41,28 +45,33 @@ func NewSCI2Policy(logger hclog.Logger) *cobra.Command {
 }
 
 // Intended output - code generation - plans and policy as code for the plan
-func runSCI2Policy(option *options.Options) error {
+func runSCI2Policy(ctx context.Context, option *options.Options) error {
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
 	}
 
-	policy, err := GetPolicy(option.Policy)
+	getPolicy, err := GetPolicy(option.Policy)
 	if err != nil {
 		return err
 	}
 
-	// Set loaders
-	// TODO: Find a way to make this optional
-	for i := range policy.Refs {
-		// Lazily load evals
-		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
-			var l4Eval layer4.Layer4
-			return &l4Eval, nil
-		}
+	err = os.MkdirAll(option.EvalDir, os.ModeDir)
+	if err != nil {
+		return err
 	}
 
-	inputContext, err := actions.NewContextFromRefs(policy.Refs...)
+	foundRefs, err := generateTemplates(getPolicy, option.EvalDir)
+	if err != nil {
+		return err
+	}
+
+	if foundRefs == nil || len(foundRefs) == 0 {
+		fmt.Printf("No evaluation plans found. Fill out created templtes in %s\n", option.EvalDir)
+		return nil
+	}
+
+	inputContext, err := actions.NewContextFromRefs(foundRefs...)
 	if err != nil {
 		return err
 	}
@@ -86,30 +95,59 @@ func runSCI2Policy(option *options.Options) error {
 		return err
 	}
 
-	for _, cat := range policy.Catalogs {
-		catalog, err := getCatalog(cat)
-		if err != nil {
-			return err
-		}
-		for _, ref := range policy.Refs {
-			eval, err := actions.GenerateEvaluation(catalog, launchedPlugins[ref.PluginID])
-			if err != nil {
-				return err
-			}
-
-			data, err := yaml.Marshal(eval)
-			if err != nil {
-				return err
-			}
-
-			err = os.MkdirAll(option.EvalDir, os.ModePerm)
-			if err != nil {
-				return err
-			}
-			filePath := filepath.Clean(filepath.Join(option.EvalDir, fmt.Sprintf("%s.yml", ref.Service)))
-			return os.WriteFile(filePath, data, os.ModePerm)
-		}
+	err = actions.GeneratePolicy(ctx, inputContext, launchedPlugins)
+	if err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func generateTemplates(getPolicy policy.Policy, evalDir string) (foundRefs []policy.PlanRef, err error) {
+	// FIXME: Duplicates need to be removed one per validator and Layer 2 catalog
+	for _, catalogPath := range getPolicy.Catalogs {
+		catalog, err := getCatalog(catalogPath)
+		if err != nil {
+			return foundRefs, err
+		}
+		// Set loaders
+		for _, ref := range getPolicy.Refs {
+			// Plans are under the plugin name <plugin-id>-<catalog-id>.yml
+			filePath := filepath.Clean(filepath.Join(evalDir, fmt.Sprintf("%s-%s.yml", ref.PluginID, catalog.Metadata.Id)))
+			if _, err := os.Stat(filePath); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					if err := generateNewEvalTemplate(catalog, filePath); err != nil {
+						return foundRefs, err
+					}
+					// Do not generate policy if creating a template from scratch
+					continue
+				}
+				return foundRefs, err
+			}
+			ref.Loader = func() (*layer4.Layer4, error) {
+				var l4Eval layer4.Layer4
+				file, err := os.Open(filePath)
+				if err != nil {
+					return nil, err
+				}
+				decoder := yaml.NewDecoder(file)
+				err = decoder.Decode(&l4Eval)
+				if err != nil {
+					return nil, err
+				}
+				return &l4Eval, nil
+			}
+			foundRefs = append(foundRefs, ref)
+		}
+	}
+	return foundRefs, nil
+}
+
+func generateNewEvalTemplate(catalog layer2.Layer2, filePath string) error {
+	eval := layer4.NewEvaluation(catalog)
+	data, err := yaml.Marshal(eval)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, data, os.ModePerm)
 }

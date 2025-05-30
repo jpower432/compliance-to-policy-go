@@ -19,6 +19,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/cmd/c2pcli/cli/options"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/policy"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
@@ -53,32 +54,17 @@ func runResult2SCI(ctx context.Context, option *options.Options) error {
 		return err
 	}
 
-	policy, err := GetPolicy(option.Policy)
+	getPolicy, err := GetPolicy(option.Policy)
 	if err != nil {
 		return err
 	}
 
-	// Set loaders
-	for i := range policy.Refs {
-		// Lazily load evals
-		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
-			var l4Eval layer4.Layer4
-			filePath := filepath.Clean(filepath.Join(option.EvalDir, fmt.Sprintf("%s.yml", policy.Refs[i].Service)))
-			file, err := os.Open(filePath)
-			if err != nil {
-				return nil, err
-			}
-			decoder := yaml.NewDecoder(file)
-
-			err = decoder.Decode(&l4Eval)
-			if err != nil {
-				return nil, err
-			}
-			return &l4Eval, nil
-		}
+	err = findRefs(getPolicy, option.EvalDir)
+	if err != nil {
+		return err
 	}
 
-	inputContext, err := actions.NewContextFromRefs(policy.Refs...)
+	inputContext, err := actions.NewContextFromRefs(getPolicy.Refs...)
 	if err != nil {
 		return err
 	}
@@ -98,23 +84,113 @@ func runResult2SCI(ctx context.Context, option *options.Options) error {
 		return err
 	}
 
-	for _, ref := range policy.Refs {
+	filePathResults := filepath.Join(option.EvalDir, "results")
+	filePathResults = filepath.Clean(filePathResults)
+	err = os.MkdirAll(filePathResults, 0750)
+	if err != nil {
+		return err
+	}
+
+	for _, ref := range getPolicy.Refs {
 		provider := launchedPlugins[ref.PluginID]
 		if err := actions.Evaluate(ctx, inputContext, &ref, provider); err != nil {
 			return err
 		}
 
-		data, err := yaml.Marshal(ref.Plan)
+		data, err := MarshalConfigWithFunction(ref.Plan)
 		if err != nil {
 			return err
 		}
 
-		err = os.MkdirAll(option.EvalDir, os.ModeDir)
-		if err != nil {
-			return err
-		}
-		filePath := filepath.Clean(filepath.Join(option.EvalDir, fmt.Sprintf("%s.yml", ref.Service)))
+		// Write the resulting evaluation for each service to a new file
+		filePath := filepath.Clean(filepath.Join(filePathResults, fmt.Sprintf("%s.yml", ref.Service)))
 		return os.WriteFile(filePath, data, os.ModePerm)
 	}
 	return nil
+}
+
+func findRefs(getPolicy policy.Policy, evalDir string) error {
+	for _, catalogPath := range getPolicy.Catalogs {
+		catalog, err := getCatalog(catalogPath)
+		if err != nil {
+			return err
+		}
+		// Set loaders
+		for i := range getPolicy.Refs {
+			// Plans are under the plugin name <plugin-id>-<catalog-id>.yml
+			filePath := filepath.Clean(filepath.Join(evalDir, fmt.Sprintf("%s-%s.yml", getPolicy.Refs[i].PluginID, catalog.Metadata.Id)))
+			getPolicy.Refs[i].Loader = func() (*layer4.Layer4, error) {
+				var l4Eval layer4.Layer4
+				file, err := os.Open(filePath)
+				if err != nil {
+					return nil, err
+				}
+				decoder := yaml.NewDecoder(file)
+				err = decoder.Decode(&l4Eval)
+				if err != nil {
+					return nil, err
+				}
+				return &l4Eval, nil
+			}
+		}
+	}
+	return nil
+}
+
+type Marshalable struct {
+	layer4.Layer4
+}
+
+// Temporary until unmarshalling is done upstream
+
+func (mc Marshalable) MarshalYAML() (interface{}, error) {
+	outputMap := make(map[string]interface{})
+	outputMap["catalogId"] = mc.CatalogID
+	outputMap["startTime"] = mc.StartTime
+	outputMap["endTime"] = mc.EndTime
+	outputMap["corruptedState"] = mc.CorruptedState
+
+	controlEvals := []map[string]interface{}{}
+	for _, controlEval := range mc.ControlEvaluations {
+		evalMap := make(map[string]interface{})
+		evalMap["controlID"] = controlEval.ControlID
+		assessments := []map[string]interface{}{}
+		for _, assessment := range controlEval.Assessments {
+			assessmentMap := make(map[string]interface{})
+			assessmentMap["requirementID"] = assessment.RequirementID
+			methods := []map[string]interface{}{}
+			for _, method := range assessment.Methods {
+				methodMap := make(map[string]interface{})
+				methodMap["name"] = method.Name
+				methodMap["description"] = method.Description
+				methodMap["run"] = method.Run
+				if method.Result != nil {
+					methodMap["results"] = map[string]interface{}{
+						"status": method.Result.Status,
+					}
+				}
+				methods = append(methods, methodMap)
+			}
+			assessmentMap["methods"] = methods
+			assessments = append(assessments, assessmentMap)
+		}
+		evalMap["assessments"] = assessments
+		controlEvals = append(controlEvals, evalMap)
+	}
+	outputMap["controlEvaluations"] = controlEvals
+
+	// Return the map, which yaml.Marshal will then convert into YAML.
+	return outputMap, nil
+}
+
+// MarshalConfigWithFunction takes a Config struct and returns its YAML representation
+// by leveraging the custom MarshalYAML implementation.
+func MarshalConfigWithFunction(eval *layer4.Layer4) ([]byte, error) {
+	marshalable := Marshalable{*eval}
+
+	yamlData, err := yaml.Marshal(marshalable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal config to YAML using custom marshaler: %w", err)
+	}
+	return yamlData, nil
 }

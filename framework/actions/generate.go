@@ -10,10 +10,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
-	"github.com/revanite-io/sci/layer2"
-	"github.com/revanite-io/sci/layer4"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/logging"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
@@ -47,34 +44,4 @@ func GeneratePolicy(ctx context.Context, inputContext *InputContext, pluginSet m
 		}
 	}
 	return nil
-}
-
-// GenerateEvaluation returns a Layer4 evaluation plan based on a Layer 2 catalog and action context.
-// This should also generate policy.
-func GenerateEvaluation(catalog layer2.Layer2, provider policy.Provider) (*layer4.Layer4, error) {
-	var appliedRuleSets policy.Policy
-
-	evaluation := layer4.NewEvaluation(catalog)
-	for _, controlEval := range evaluation.ControlEvaluations {
-		for _, assessment := range controlEval.Assessments {
-			ruleSet := extensions.RuleSet{
-				Rule: extensions.Rule{
-					ID: assessment.RequirementID,
-				},
-			}
-			for _, method := range assessment.Methods {
-				check := extensions.Check{
-					ID:          method.Name,
-					Description: method.Description,
-				}
-				ruleSet.Checks = append(ruleSet.Checks, check)
-			}
-			appliedRuleSets = append(appliedRuleSets, ruleSet)
-		}
-	}
-
-	if err := provider.Generate(appliedRuleSets); err != nil {
-		return nil, err
-	}
-	return evaluation, nil
 }

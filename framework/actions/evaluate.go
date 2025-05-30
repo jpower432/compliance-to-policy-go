@@ -49,9 +49,8 @@ func Evaluate(ctx context.Context, inputContext *InputContext, ref *fpolicy.Plan
 
 	for _, controlEvals := range ref.Plan.ControlEvaluations {
 		for i := range controlEvals.Assessments {
-			assessment := controlEvals.Assessments[i]
-			checks := checksByRule[assessment.RequirementID]
-			assessment.Methods = getMethods(checks)
+			checks := checksByRule[controlEvals.Assessments[i].RequirementID]
+			controlEvals.Assessments[i].Methods = getMethods(checks)
 		}
 	}
 	ref.Plan.EndTime = time.Now()

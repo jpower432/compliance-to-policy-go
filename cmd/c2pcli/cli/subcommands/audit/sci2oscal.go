@@ -66,7 +66,7 @@ func runSCI2OSCAL(option *options.Options) error {
 		// Lazily load evals
 		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
 			var l4Eval layer4.Layer4
-			filePath := filepath.Clean(filepath.Join(option.EvalDir, fmt.Sprintf("%s.yml", policy.Refs[i].Service)))
+			filePath := filepath.Clean(filepath.Join(option.EvalDir, "results", fmt.Sprintf("%s.yml", policy.Refs[i].Service)))
 			file, err := os.Open(filePath)
 			if err != nil {
 				return nil, err
