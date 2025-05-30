@@ -67,22 +67,23 @@ func runSCI2OSCAL(option *options.Options) error {
 		policy.Refs[i].Loader = func() (*layer4.Layer4, error) {
 			var l4Eval layer4.Layer4
 			filePath := filepath.Clean(filepath.Join(option.EvalDir, "results", fmt.Sprintf("%s.yml", policy.Refs[i].Service)))
-			file, err := os.Open(filePath)
+			data, err := os.ReadFile(filePath)
 			if err != nil {
 				return nil, err
 			}
-			decoder := yaml.NewDecoder(file)
 
-			err = decoder.Decode(&l4Eval)
+			err = yaml.Unmarshal(data, &l4Eval)
 			if err != nil {
 				return nil, err
 			}
 			return &l4Eval, nil
 		}
 	}
+	logger := option.Logger()
+	logger.Debug(fmt.Sprintf("Using catalog %s", catalog.Metadata.Title))
 
 	// Assuming the OSCAL Catalog Title would line up with the ID in the Eval
-	assessmentResults, err := convert.SCI2AssessmentResults(policy.Refs, catalog.Metadata.Title)
+	assessmentResults, err := convert.SCI2AssessmentResults(policy.Refs, catalog.Metadata.Title, logger)
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,6 @@ func runSCI2OSCAL(option *options.Options) error {
 		AssessmentResults: &assessmentResults,
 	}
 
-	logger := option.Logger()
 	// Validate before writing out
 	logger.Info("Validating generated assessment results")
 	if err := validator.Validate(oscalModels); err != nil {

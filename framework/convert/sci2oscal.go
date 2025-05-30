@@ -6,6 +6,7 @@ import (
 
 	"github.com/defenseunicorns/go-oscal/src/pkg/uuid"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
+	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/revanite-io/sci/layer4"
@@ -14,7 +15,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 )
 
-func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string) (oscalTypes.AssessmentResults, error) {
+func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string, logger hclog.Logger) (oscalTypes.AssessmentResults, error) {
 	comps := map[string]oscalTypes.SystemComponent{}
 	var findings []oscalTypes.Finding
 	var observations []oscalTypes.Observation
@@ -35,15 +36,21 @@ func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string) (oscalTypes
 		Components:     &[]oscalTypes.SystemComponent{},
 		InventoryItems: &[]oscalTypes.InventoryItem{},
 	}
+
+	var inScopePlan uint
 	for _, plan := range plans {
 		if plan.Plan == nil {
+			logger.Debug(fmt.Sprintf("Loading plan for %s", plan.Service))
 			if err := plan.Load(); err != nil {
 				return assessmentResults, err
 			}
 		}
 		if plan.Plan.CatalogID != catalogId {
+			logger.Debug(fmt.Sprintf("Plan %s does not match %s. Skipping...", plan.Plan.CatalogID, catalogId))
 			continue
 		}
+		inScopePlan++
+
 		comp, ok := comps[plan.PluginID.String()]
 		if !ok {
 			comp = component(plan.PluginID.String())
@@ -74,6 +81,7 @@ func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string) (oscalTypes
 			*assessedControls.IncludeControls = append(*assessedControls.IncludeControls)
 		}
 	}
+	logger.Debug(fmt.Sprintf("Processed %v in scope plans", inScopePlan))
 
 	// Check for empty optional arrays
 	localDefinition.Components = pkg.NilIfEmpty(localDefinition.Components)
@@ -97,11 +105,28 @@ func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string) (oscalTypes
 }
 
 func observation(method layer4.AssessmentMethod, end time.Time, inventoryItem oscalTypes.InventoryItem, req string) oscalTypes.Observation {
+	var status = "skipped"
+	if method.Result != nil && method.Result.Status != "" {
+		status = string(method.Result.Status)
+	}
+	if method.RemediationGuide == "" {
+		method.RemediationGuide = "N/A"
+	}
 	return oscalTypes.Observation{
 		Collected:   end,
 		Description: method.Description,
 		Title:       method.Name,
 		UUID:        uuid.NewUUID(),
+		Methods: []string{
+			"TEST",
+		},
+		Props: &[]oscalTypes.Property{
+			{
+				Name:  extensions.AssessmentRuleIdProp,
+				Value: req,
+				Ns:    extensions.TrestleNameSpace,
+			},
+		},
 		Subjects: &[]oscalTypes.SubjectReference{
 			{
 				SubjectUuid: inventoryItem.UUID,
@@ -115,7 +140,7 @@ func observation(method layer4.AssessmentMethod, end time.Time, inventoryItem os
 					},
 					{
 						Name:  "result",
-						Value: string(method.Result.Status),
+						Value: status,
 						Ns:    extensions.TrestleNameSpace,
 					},
 					{
@@ -137,6 +162,7 @@ func component(validator string) oscalTypes.SystemComponent {
 		Status: oscalTypes.SystemComponentStatus{
 			State: "operational",
 		},
+		Type: "validation",
 	}
 }
 

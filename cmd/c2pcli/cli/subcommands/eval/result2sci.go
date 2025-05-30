@@ -145,19 +145,19 @@ type Marshalable struct {
 
 func (mc Marshalable) MarshalYAML() (interface{}, error) {
 	outputMap := make(map[string]interface{})
-	outputMap["catalogId"] = mc.CatalogID
-	outputMap["startTime"] = mc.StartTime
-	outputMap["endTime"] = mc.EndTime
-	outputMap["corruptedState"] = mc.CorruptedState
+	outputMap["catalog_id"] = mc.CatalogID
+	outputMap["start_time"] = mc.StartTime
+	outputMap["end_time"] = mc.EndTime
+	outputMap["corrupted_state"] = mc.CorruptedState
 
 	controlEvals := []map[string]interface{}{}
 	for _, controlEval := range mc.ControlEvaluations {
 		evalMap := make(map[string]interface{})
-		evalMap["controlID"] = controlEval.ControlID
+		evalMap["control_id"] = controlEval.ControlID
 		assessments := []map[string]interface{}{}
 		for _, assessment := range controlEval.Assessments {
 			assessmentMap := make(map[string]interface{})
-			assessmentMap["requirementID"] = assessment.RequirementID
+			assessmentMap["requirement_id"] = assessment.RequirementID
 			methods := []map[string]interface{}{}
 			for _, method := range assessment.Methods {
 				methodMap := make(map[string]interface{})
@@ -165,7 +165,7 @@ func (mc Marshalable) MarshalYAML() (interface{}, error) {
 				methodMap["description"] = method.Description
 				methodMap["run"] = method.Run
 				if method.Result != nil {
-					methodMap["results"] = map[string]interface{}{
+					methodMap["result"] = map[string]interface{}{
 						"status": method.Result.Status,
 					}
 				}
@@ -177,7 +177,7 @@ func (mc Marshalable) MarshalYAML() (interface{}, error) {
 		evalMap["assessments"] = assessments
 		controlEvals = append(controlEvals, evalMap)
 	}
-	outputMap["controlEvaluations"] = controlEvals
+	outputMap["evaluations"] = controlEvals
 
 	// Return the map, which yaml.Marshal will then convert into YAML.
 	return outputMap, nil
