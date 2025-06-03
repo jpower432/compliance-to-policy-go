@@ -78,7 +78,7 @@ func SCI2AssessmentResults(plans []policy.PlanRef, catalogId string, logger hclo
 					}
 				}
 			}
-			*assessedControls.IncludeControls = append(*assessedControls.IncludeControls)
+			*assessedControls.IncludeControls = append(*assessedControls.IncludeControls, selection)
 		}
 	}
 	logger.Debug(fmt.Sprintf("Processed %v in scope plans", inScopePlan))
