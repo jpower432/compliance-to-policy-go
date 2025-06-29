@@ -7,16 +7,23 @@ package actions
 
 import (
 	"context"
+	"os"
 	"sort"
 	"testing"
 
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/models"
+	"github.com/oscal-compass/oscal-sdk-go/models/components"
+	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy/evaluation"
 )
 
 var (
@@ -111,6 +118,29 @@ func (p *policyProvider) GetResults(policyRules policy.Policy) (policy.PVPResult
 	sort.SliceStable(policyRules, func(i, j int) bool {
 		return policyRules[i].Rule.ID > policyRules[j].Rule.ID
 	})
+
 	args := p.Called(policyRules)
 	return args.Get(0).(policy.PVPResult), args.Error(1)
+}
+
+// inputContextHelper to support other testing in the package
+func inputContextHelper(t *testing.T) *evaluation.InputContext {
+	testDataPath := pkg.PathFromPkgDirectory("./testdata/oscal/component-definition-test.json")
+	file, err := os.Open(testDataPath)
+	require.NoError(t, err)
+	definition, err := models.NewComponentDefinition(file, validation.NoopValidator{})
+	require.NoError(t, err)
+
+	var allComponents []components.Component
+	for _, component := range *definition.Components {
+		compAdapter := components.NewDefinedComponentAdapter(component)
+		allComponents = append(allComponents, compAdapter)
+	}
+
+	store := rules.NewMemoryStore()
+	require.NoError(t, store.IndexAll(allComponents))
+
+	inputContext := evaluation.NewContext(map[plugin.ID]string{"mypvpvalidator": "MyPVPValidator"}, store)
+	require.NoError(t, err)
+	return inputContext
 }

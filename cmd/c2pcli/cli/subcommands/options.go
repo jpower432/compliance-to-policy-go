@@ -45,15 +45,12 @@ func (c *ConfigError) Error() string {
 
 // Options define config options when for the CLI commands.
 type Options struct {
-	PluginDir         string                       `yaml:"plugin-dir" mapstructure:"plugin-dir"`
-	Name              string                       `yaml:"name" mapstructure:"name"`
-	Definition        string                       `yaml:"component-definition" mapstructure:"component-definition"`
-	Plan              string                       `yaml:"assessment-plan" mapstructure:"assessment-plan"`
-	Catalog           string                       `yaml:"catalog" mapstructure:"catalog"`
-	AssessmentResults string                       `yaml:"assessment-results" mapstructure:"assessment-results"`
-	Plugins           map[string]map[string]string `yaml:"plugins" mapstructure:"plugins"`
-	Output            string                       `yaml:"out" mapstructure:"out"`
-	logger            hclog.Logger
+	PluginDir     string                       `yaml:"plugin-dir" mapstructure:"plugin-dir"`
+	Plugins       map[string]map[string]string `yaml:"plugins" mapstructure:"plugins"`
+	Output        string                       `yaml:"out" mapstructure:"out"`
+	OSCALOptions  `yaml:"oscal" mapstructure:"oscal"`
+	GemaraOptions `yaml:"sci" mapstructure:"sci"`
+	logger        hclog.Logger
 }
 
 // NewOptions returns an initialized Options struct.
@@ -61,26 +58,6 @@ func NewOptions() *Options {
 	return &Options{
 		Plugins: make(map[string]map[string]string),
 	}
-}
-
-// Complete the options from the given command.
-func (o *Options) Complete(cmd *cobra.Command) error {
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		err := viper.BindPFlag(flag.Name, flag)
-		if err != nil {
-			panic(err)
-		}
-	})
-
-	// If a config path is set, read options from the config
-	if viper.IsSet(ConfigPath) {
-		viper.SetConfigFile(viper.GetString(ConfigPath))
-		if err := viper.ReadInConfig(); err != nil {
-			return err
-		}
-		return viper.Unmarshal(o)
-	}
-	return nil
 }
 
 // Validate the completed Options struct
@@ -97,16 +74,87 @@ func (o *Options) Validate() error {
 	return nil
 }
 
+// Complete the options from the given command.
+func (o *Options) Complete(cmd *cobra.Command, logger hclog.Logger) error {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		err := viper.BindPFlag(flag.Name, flag)
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	// If a config path is set, read options from the config
+	if viper.IsSet(ConfigPath) {
+		viper.SetConfigFile(viper.GetString(ConfigPath))
+		if err := viper.ReadInConfig(); err != nil {
+			return err
+		}
+	}
+	o.logger = logger
+
+	// FIXME: Looks at other options for nesting
+	if err := viper.Unmarshal(o); err != nil {
+		return err
+	}
+	if err := viper.Unmarshal(&o.OSCALOptions); err != nil {
+		return err
+	}
+	if err := viper.Unmarshal(&o.GemaraOptions); err != nil {
+		return err
+	}
+	return nil
+}
+
+type OSCALOptions struct {
+	Name              string `yaml:"name" mapstructure:"name"`
+	Definition        string `yaml:"component-definition" mapstructure:"component-definition"`
+	Plan              string `yaml:"assessment-plan" mapstructure:"assessment-plan"`
+	Catalog           string `yaml:"catalog" mapstructure:"catalog"`
+	AssessmentResults string `yaml:"assessment-results" mapstructure:"assessment-results"`
+}
+
+// Validate the completed Options struct
+func (o *OSCALOptions) Validate() error {
+	if o.Definition == "" && o.Plan == "" {
+		return fmt.Errorf("must set %s or %s", ComponentDefinition, AssessmentPlan)
+	}
+	if o.Definition != "" && o.Plan != "" {
+		return fmt.Errorf("cannot set both %s and %s values", ComponentDefinition, AssessmentPlan)
+	}
+	if o.Definition != "" && o.Name == "" {
+		return &ConfigError{Option: Name}
+	}
+	return nil
+}
+
+type GemaraOptions struct {
+	EvalDir string `yaml:"eval-dir" mapstructure:"eval-dir"`
+	Policy  string `yaml:"policy" mapstructure:"policy"`
+}
+
+// Logger returns the configured Options logger.
+func (o *Options) Logger() hclog.Logger {
+	return o.logger
+}
+
 // BindCommonFlags binds common flags for all commands.
 func BindCommonFlags(fs *pflag.FlagSet) {
-	fs.StringP(ComponentDefinition, "d", "", "path to component-definition.json file. This option cannot be used with --assessment-plan.")
 	fs.StringP(ConfigPath, "c", "c2p-config.yaml", "path to the configuration for the C2P CLI.")
-	fs.StringP(AssessmentPlan, "a", "", "path to assessment-plan.json. This option cannot be used with --component-definition.")
-	fs.StringP(Name, "n", "", "short name of the control source for the implementation to be evaluated. Use with --component-definition.")
 }
 
 // BindPluginFlags binds flags for command that interact with the plugin manager.
 func BindPluginFlags(fs *pflag.FlagSet) {
 	BindCommonFlags(fs)
 	fs.StringP("plugin-dir", "p", "c2p-plugins", "path to plugin directory. Defaults to `c2p-plugins`.")
+	fs.StringP(Name, "n", "", "short name of the control source for the implementation to be evaluated. Use with --component-definition.")
+}
+
+func BindOSCALFlags(fs *pflag.FlagSet) {
+	fs.StringP(ComponentDefinition, "d", "", "path to component-definition.json file. This option cannot be used with --assessment-plan.")
+	fs.StringP(AssessmentPlan, "a", "", "path to assessment-plan.json. This option cannot be used with --component-definition.")
+}
+
+func BindGemaraFlags(fs *pflag.FlagSet) {
+	fs.StringP("eval-dir", "e", "", "Location of evaluation files")
+	fs.String("policy", "", "path to Layer 3 policy.")
 }

@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package actions
+package oscal
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy/evaluation"
 )
 
 var (
@@ -301,7 +302,7 @@ func TestGenerateResource(t *testing.T) {
 }
 
 // inputContextHelperPlan created input context from a plan.
-func inputContextHelperPlan(t *testing.T) (*InputContext, oscalTypes.AssessmentPlan) {
+func inputContextHelperPlan(t *testing.T) (*evaluation.InputContext, oscalTypes.AssessmentPlan) {
 	testDataPath := pkg.PathFromPkgDirectory("./testdata/oscal/component-definition-test.json")
 	file, err := os.Open(testDataPath)
 	require.NoError(t, err)
@@ -322,7 +323,7 @@ func inputContextHelperPlan(t *testing.T) (*InputContext, oscalTypes.AssessmentP
 		allComponents = append(allComponents, compAdapter)
 	}
 
-	inputContext, err := NewContext(allComponents)
+	inputContext, err := newContext(allComponents)
 	require.NoError(t, err)
 	return inputContext, *ap
 }

@@ -4,14 +4,14 @@ package protocols;
 
 option go_package = "github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/";
 
-import "api/proto/models.proto";
+import "models.proto";
 
 // PVP policy request
 message PolicyRequest {
   repeated protocols.Rule rule = 1;
 }
 
-// genereate PVP policy response
+// generate PVP policy response
 message GenerateResponse {}
 
 // get PVP results response

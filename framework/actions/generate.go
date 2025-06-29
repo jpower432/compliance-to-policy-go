@@ -7,7 +7,6 @@ package actions
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/oscal-compass/oscal-sdk-go/settings"
@@ -15,22 +14,19 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/logging"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy/evaluation"
 )
 
 // GeneratePolicy action identifies policy configuration for each provider in the given pluginSet to execute the Generate() method
 // each policy.Provider.
 //
 // The rule set passed to each plugin can be configured with compliance specific settings based on the InputContext.
-func GeneratePolicy(ctx context.Context, inputContext *InputContext, pluginSet map[plugin.ID]policy.Provider) error {
+func GeneratePolicy(ctx context.Context, inputContext *evaluation.InputContext, pluginSet map[plugin.ID]policy.Provider) error {
 	log := logging.GetLogger("generator")
 
 	for providerId, policyPlugin := range pluginSet {
 		componentTitle, err := inputContext.ProviderTitle(providerId)
 		if err != nil {
-			if errors.Is(err, ErrMissingProvider) {
-				log.Warn(fmt.Sprintf("skipping %s provider: missing validation component", providerId))
-				continue
-			}
 			return err
 		}
 		log.Debug(fmt.Sprintf("Generating policy for provider %s", providerId))

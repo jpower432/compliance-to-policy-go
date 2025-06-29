@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package actions
+package oscal
 
 import (
 	"os"
@@ -17,6 +17,7 @@ import (
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy/evaluation"
 )
 
 func TestGetPluginIDFromComponent(t *testing.T) {
@@ -83,7 +84,7 @@ func TestGetPluginIDFromComponent(t *testing.T) {
 }
 
 // inputContextHelper to support other testing in the package
-func inputContextHelper(t *testing.T) *InputContext {
+func inputContextHelper(t *testing.T) *evaluation.InputContext {
 	testDataPath := pkg.PathFromPkgDirectory("./testdata/oscal/component-definition-test.json")
 	file, err := os.Open(testDataPath)
 	require.NoError(t, err)
@@ -96,7 +97,7 @@ func inputContextHelper(t *testing.T) *InputContext {
 		allComponents = append(allComponents, compAdapter)
 	}
 
-	inputContext, err := NewContext(allComponents)
+	inputContext, err := newContext(allComponents)
 	require.NoError(t, err)
 	return inputContext
 }

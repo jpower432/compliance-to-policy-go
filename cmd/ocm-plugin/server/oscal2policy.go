@@ -78,6 +78,9 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 		for _, prm := range ruleObject.Rule.Parameters {
 			parameters[prm.ID] = prm.Value
 		}
+
+		// FIXME: This won't work for the Gemara use case.
+		// The app would be expected to know the checks
 		for _, check := range ruleObject.Checks {
 			policyId := check.ID
 			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, check.ID)

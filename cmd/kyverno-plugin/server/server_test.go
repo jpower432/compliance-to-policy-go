@@ -10,7 +10,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
@@ -19,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 func TestOscal2Policy(t *testing.T) {
@@ -49,7 +49,7 @@ func TestConfigure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createPolicy(t *testing.T) []extensions.RuleSet {
+func createPolicy(t *testing.T) policy.Policy {
 	cdPath := pkg.PathFromPkgDirectory("./testdata/kyverno/component-definition.json")
 
 	file, err := os.Open(cdPath)

@@ -40,6 +40,7 @@ func NewOscal2Policy(policiesDir string, tempDir pkg.TempDirectory) *Oscal2Polic
 	}
 }
 
+// TODO: Generate an evaluation plan
 func (c *Oscal2Policy) Generate(pl policy.Policy) error {
 	for _, ruleObject := range pl {
 		sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, ruleObject.Rule.ID)

@@ -88,3 +88,20 @@ Use "c2pcli [command] --help" for more information about a command.
    ```bash
    c2pcli oscal2posture -c docs/c2p-config.yaml --name nist_800_53 --assessment-results /tmp/assessment-results.json -o /tmp/compliance-posture.md
    ```
+   
+
+## Gemara Adoption Testing
+
+### OSCAL
+```bash
+ c2pcli eval compliance2policy oscal -c docs/c2p-config.yaml --generate-templates -d ./pkg/testdata/oscal/component-definition-heterogeneous.json -a ./assessment-plan.json -n nist_800_53
+ c2pcli eval compliance2policy oscal -c docs/c2p-config.yaml -a ./assessment-plan.json -n nist_800_53
+ c2pcli eval result2compliance oscal -c docs/c2p-config.yaml -a ./assessment-plan.json -n nist_800_53 --out ./assessment-results.json
+```
+
+### Gemara
+```bash
+ c2pcli eval compliance2policy gemara -c docs/c2p-config.yaml --policy docs/policy.yaml --generate-templates --eval-dir ~/testevals/
+ c2pcli eval compliance2policy gemara -c docs/c2p-config.yaml --policy docs/policy.yaml --eval-dir ~/testevals/
+ c2pcli eval result2compliance gemara -c docs/c2p-config.yaml --policy docs/policy.yaml --eval-dir ~/testevals/
+```

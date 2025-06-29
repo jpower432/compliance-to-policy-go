@@ -20,8 +20,10 @@ func TestOptions_Validate(t *testing.T) {
 		{
 			name: "Invalid/BothOptionsSet",
 			options: &Options{
-				Definition: "set",
-				Plan:       "also-set",
+				OSCALOptions: OSCALOptions{
+					Definition: "set",
+					Plan:       "also-set",
+				},
 			},
 			wantError: "cannot set both component-definition and assessment-plan values",
 		},
@@ -33,21 +35,27 @@ func TestOptions_Validate(t *testing.T) {
 		{
 			name: "Invalid/InvalidOptionsSet",
 			options: &Options{
-				Definition: "set",
+				OSCALOptions: OSCALOptions{
+					Definition: "set",
+				},
 			},
 			wantError: "\"name\" option is not set",
 		},
 		{
 			name: "Valid/PlanSet",
 			options: &Options{
-				Plan: "also-set",
+				OSCALOptions: OSCALOptions{
+					Plan: "also-set",
+				},
 			},
 		},
 		{
 			name: "Valid/DefinitionSet",
 			options: &Options{
-				Definition: "set",
-				Name:       "set",
+				OSCALOptions: OSCALOptions{
+					Definition: "set",
+					Name:       "set",
+				},
 			},
 		},
 	}

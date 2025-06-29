@@ -3,7 +3,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package actions
+package oscal
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/logging"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/pkg"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy/evaluation"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 var validSubjectTypes = []string{InventoryItem, Resource}
 
 // Report action generates an Assessment Results from an Assessment Plan and Context.
-func Report(ctx context.Context, inputContext *InputContext, planHref string, plan oscalTypes.AssessmentPlan, results []policy.PVPResult) (*oscalTypes.AssessmentResults, error) {
+func Report(ctx context.Context, inputContext *evaluation.InputContext, planHref string, plan oscalTypes.AssessmentPlan, results []policy.PVPResult) (*oscalTypes.AssessmentResults, error) {
 	log := logging.GetLogger("reporter")
 	log.Info(fmt.Sprintf("generating assessments results for plan %s", planHref))
 
@@ -209,7 +210,7 @@ func generateInventoryItem(subject *oscalTypes.SubjectReference) oscalTypes.Inve
 		Props:       &[]oscalTypes.Property{},
 	}
 
-	invItemProps := []oscalTypes.Property{}
+	var invItemProps []oscalTypes.Property
 	for _, prop := range *subject.Props {
 		if slices.Contains(invItemPropNames, prop.Name) {
 			invItemProps = append(invItemProps, prop)

@@ -3,21 +3,17 @@
  SPDX-License-Identifier: Apache-2.0
 */
 
-package actions
+package evaluation
 
 import (
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
-
-const pluginComponentType = "validation"
 
 var ErrMissingProvider = errors.New("missing title for provider")
 
@@ -35,28 +31,15 @@ type InputContext struct {
 	rulesStore rules.Store
 	// Settings define adjustable rule settings parsed from framework-specific implementation
 	Settings settings.Settings
+	// Applicability defines the profiles for a group a checks
+	Applicability string
 }
 
-// NewContext returns an InputContext for the given OSCAL Components.
-func NewContext(components []components.Component) (*InputContext, error) {
-	inputCtx := &InputContext{
-		requestedProviders: make(map[plugin.ID]string),
+func NewContext(providers map[plugin.ID]string, store rules.Store) *InputContext {
+	return &InputContext{
+		requestedProviders: providers,
+		rulesStore:         store,
 	}
-	for _, comp := range components {
-		if comp.Type() == pluginComponentType {
-			pluginId, err := GetPluginIDFromComponent(comp)
-			if err != nil {
-				return inputCtx, err
-			}
-			inputCtx.requestedProviders[pluginId] = comp.Title()
-		}
-	}
-	store, err := DefaultStore(components)
-	if err != nil {
-		return inputCtx, err
-	}
-	inputCtx.rulesStore = store
-	return inputCtx, nil
 }
 
 // RequestedProviders returns the provider ids requested in the parsed input.
@@ -80,31 +63,4 @@ func (t *InputContext) ProviderTitle(providerId plugin.ID) (string, error) {
 // Store returns the underlying rules.Store with indexed RuleSets.
 func (t *InputContext) Store() rules.Store {
 	return t.rulesStore
-}
-
-// DefaultStore returns a default rules.MemoryStore with indexed information from the given
-// Components.
-func DefaultStore(allComponents []components.Component) (*rules.MemoryStore, error) {
-	store := rules.NewMemoryStore()
-	err := store.IndexAll(allComponents)
-	if err != nil {
-		return store, err
-	}
-	return store, nil
-}
-
-// GetPluginIDFromComponent returns the normalized plugin identifier defined by the OSCAL Component
-// of type "validation".
-func GetPluginIDFromComponent(component components.Component) (plugin.ID, error) {
-	title := strings.TrimSpace(component.Title())
-	if title == "" {
-		return "", fmt.Errorf("component is missing a title")
-	}
-
-	title = strings.ToLower(title)
-	id := plugin.ID(title)
-	if !id.Validate() {
-		return "", fmt.Errorf("invalid plugin id %s", title)
-	}
-	return id, nil
 }

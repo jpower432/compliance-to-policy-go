@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/rules"
@@ -168,7 +167,7 @@ func TestConfigure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createPolicy(t *testing.T) []extensions.RuleSet {
+func createPolicy(t *testing.T) policy.Policy {
 	cdPath := pkg.PathFromPkgDirectory("./testdata/ocm/component-definition.json")
 
 	file, err := os.Open(cdPath)

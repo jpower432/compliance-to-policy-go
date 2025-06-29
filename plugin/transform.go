@@ -26,7 +26,6 @@ func PolicyToProto(p policy.Policy) *proto.PolicyRequest {
 			}
 			parameters = append(parameters, protoPrm)
 		}
-
 		var checks []*proto.Check
 		for _, ch := range rs.Checks {
 			check := &proto.Check{
@@ -35,11 +34,12 @@ func PolicyToProto(p policy.Policy) *proto.PolicyRequest {
 			}
 			checks = append(checks, check)
 		}
+
 		ruleSet := &proto.Rule{
 			Name:        rs.Rule.ID,
 			Description: rs.Rule.Description,
-			Checks:      checks,
 			Parameters:  parameters,
+			Checks:      checks,
 		}
 		policyRequest.Rule = append(policyRequest.Rule, ruleSet)
 	}

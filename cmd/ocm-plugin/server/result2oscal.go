@@ -143,6 +143,9 @@ func (r *ResultToOscal) GenerateResults() (provider.PVPResult, error) {
 
 	var observations []provider.ObservationByCheck
 	for _, rule := range r.policy {
+		// FIXME: This won't work for the Gemara use case.
+		// The app would be expected to know the checks
+		// Idea the requirement is embedded in the policy - Linked that way.
 		for _, check := range rule.Checks {
 			logger.Debug(fmt.Sprintf("processing check %s for rule %s", check.ID, rule.Rule.ID))
 			policyId := check.ID

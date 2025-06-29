@@ -44,3 +44,7 @@ kubeconfig.*
 
 vendor/
 c2p-plugins/
+
+# test artifacts
+assessment-plan.json
+assessment-results.json
