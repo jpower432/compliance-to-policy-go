@@ -25,6 +25,7 @@ func GeneratePolicy(ctx context.Context, inputContext *InputContext, pluginSet m
 	log := logging.GetLogger("generator")
 
 	for providerId, policyPlugin := range pluginSet {
+		// FIXME: Swtich to service
 		componentTitle, err := inputContext.ProviderTitle(providerId)
 		if err != nil {
 			if errors.Is(err, ErrMissingProvider) {
@@ -39,7 +40,13 @@ func GeneratePolicy(ctx context.Context, inputContext *InputContext, pluginSet m
 		if err != nil {
 			return fmt.Errorf("failed to get rule sets for component %s: %w", componentTitle, err)
 		}
-		if err := policyPlugin.Generate(appliedRuleSet); err != nil {
+
+		policyConfig := policy.Policy{
+			Rules:         appliedRuleSet,
+			Applicability: inputContext.Applicability,
+		}
+
+		if err := policyPlugin.Generate(policyConfig); err != nil {
 			return fmt.Errorf("plugin %s: %w", providerId, err)
 		}
 	}

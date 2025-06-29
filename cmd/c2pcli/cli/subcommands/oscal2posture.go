@@ -27,7 +27,7 @@ func NewOSCAL2Posture(logger hclog.Logger) *cobra.Command {
 		Use:   "oscal2posture",
 		Short: "Generate Compliance Posture from OSCAL artifacts.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := options.Complete(cmd); err != nil {
+			if err := options.Complete(cmd, logger); err != nil {
 				return err
 			}
 			if err := options.Validate(); err != nil {
@@ -42,8 +42,9 @@ func NewOSCAL2Posture(logger hclog.Logger) *cobra.Command {
 	fs := command.Flags()
 	BindCommonFlags(fs)
 	fs.String(Catalog, "", "path to catalog.json")
-	fs.StringP("assessment-results", "r", "./assessment-results.json", "path to assessment-results.json")
 	fs.StringP("out", "o", "-", "path to output file. Use '-' for stdout. Default '-'.")
+	fs.StringP("assessment-results", "a", "./assessment-results.json", "path to assessment-results.json")
+	fs.StringP(ComponentDefinition, "d", "", "path to component-definition.json file. This option cannot be used with --assessment-plan.")
 	return command
 }
 

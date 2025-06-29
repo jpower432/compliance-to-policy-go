@@ -1,0 +1,26 @@
+metadata:
+  id: TEST-CAT
+  title: Test Catalog
+  version: 0.1.0
+  description: |
+    My test L2 catalog
+  applicability-categories:
+    - id: tlp_clear
+      title: TLP:Clear
+      description: |
+        Information may be shared without restriction.
+control-families:
+  - title: Example Family
+    description: |
+      An example control family
+    controls:
+      - id: CAT.T01
+        title: Test Control
+        objective: |
+          Ensure that the control is assessed properly.
+        assessment-requirements:
+          - id: allowed-base-images
+            text: |
+              Ensure only allowed base images are used.
+            applicability:
+              - tlp_clear

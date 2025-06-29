@@ -13,6 +13,6 @@ type Provider interface {
 	// Generate policy artifacts for a specific policy engine.
 	Generate(Policy) error
 	// GetResults from a specific policy engine and transform into
-	// PVPResults.
+	// an evaluation.
 	GetResults(Policy) (PVPResult, error)
 }

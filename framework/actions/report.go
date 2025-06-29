@@ -70,7 +70,7 @@ func Report(ctx context.Context, inputContext *InputContext, planHref string, pl
 	// Process into observations
 	for _, result := range results {
 		for _, observationByCheck := range result.ObservationsByCheck {
-			rule, err := store.GetByCheckID(ctx, observationByCheck.CheckID)
+			rule, err := store.GetByRuleID(ctx, observationByCheck.Requirement)
 			if err != nil {
 				if !errors.Is(err, rules.ErrRuleNotFound) {
 					return nil, fmt.Errorf("failed to convert observation for check %v: %w", observationByCheck.CheckID, err)

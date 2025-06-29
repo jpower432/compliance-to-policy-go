@@ -16,6 +16,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/oscal-compass/oscal-sdk-go v0.0.3
 	github.com/otiai10/copy v1.14.1
+	github.com/revanite-io/sci v0.3.7-0.20250514220423-fdddc5f50feb
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
@@ -145,6 +146,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-piv/piv-go/v2 v2.3.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/goccy/go-yaml v1.17.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -302,3 +304,5 @@ require (
 	sigs.k8s.io/release-utils v0.11.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
+
+replace github.com/revanite-io/sci => github.com/trumant/sci v0.0.0-20250506175100-8feeaf8c048b

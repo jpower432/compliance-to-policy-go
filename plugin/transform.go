@@ -16,7 +16,7 @@ import (
 // PolicyToProto transforms a plugin Policy to a protobuf PolicyRequest.
 func PolicyToProto(p policy.Policy) *proto.PolicyRequest {
 	policyRequest := &proto.PolicyRequest{}
-	for _, rs := range p {
+	for _, rs := range p.Rules {
 		var parameters []*proto.Parameter
 		for _, prm := range rs.Rule.Parameters {
 			protoPrm := &proto.Parameter{
@@ -27,19 +27,9 @@ func PolicyToProto(p policy.Policy) *proto.PolicyRequest {
 			parameters = append(parameters, protoPrm)
 		}
 
-		var checks []*proto.Check
-		for _, ch := range rs.Checks {
-			check := &proto.Check{
-				Name:        ch.ID,
-				Description: ch.Description,
-			}
-			checks = append(checks, check)
-		}
 		ruleSet := &proto.Rule{
-			Name:        rs.Rule.ID,
-			Description: rs.Rule.Description,
-			Checks:      checks,
-			Parameters:  parameters,
+			Name:       rs.Rule.ID,
+			Parameters: parameters,
 		}
 		policyRequest.Rule = append(policyRequest.Rule, ruleSet)
 	}
@@ -60,25 +50,15 @@ func NewPolicyFromProto(pb *proto.PolicyRequest) policy.Policy {
 			}
 			parameters = append(parameters, parameter)
 		}
-		var checks []extensions.Check
-		for _, ch := range r.Checks {
-			check := extensions.Check{
-				ID:          ch.Name,
-				Description: ch.Description,
-			}
-			checks = append(checks, check)
-		}
 
 		rule := extensions.RuleSet{
 			Rule: extensions.Rule{
-				ID:          r.Name,
-				Description: r.Description,
-				Parameters:  parameters,
+				ID:         r.Name,
+				Parameters: parameters,
 			},
-			Checks: checks,
 		}
 
-		p = append(p, rule)
+		p.Rules = append(p.Rules, rule)
 	}
 	return p
 }
@@ -158,11 +138,12 @@ func ResultsToProto(result policy.PVPResult) *proto.PVPResult {
 
 	for _, o := range result.ObservationsByCheck {
 		observation := &proto.ObservationByCheck{
-			Name:        o.Title,
-			Description: o.Description,
-			CheckId:     o.CheckID,
-			Methods:     o.Methods,
-			CollectedAt: timestamppb.New(o.Collected),
+			Name:                    o.Title,
+			Description:             o.Description,
+			CheckId:                 o.CheckID,
+			AssessmentRequirementId: o.Requirement,
+			Methods:                 o.Methods,
+			CollectedAt:             timestamppb.New(o.Collected),
 		}
 		var subjects []*proto.Subject
 		for _, s := range o.Subjects {

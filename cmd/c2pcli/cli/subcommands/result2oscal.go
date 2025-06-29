@@ -33,13 +33,12 @@ import (
 
 func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
-	options.logger = logger
 
 	command := &cobra.Command{
 		Use:   "result2oscal",
 		Short: "Transform policy result artifacts to OSCAL Assessment Results.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := options.Complete(cmd); err != nil {
+			if err := options.Complete(cmd, logger); err != nil {
 				return err
 			}
 			if err := options.Validate(); err != nil {
@@ -52,6 +51,7 @@ func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
 	fs := command.Flags()
 	fs.StringP("out", "o", "./assessment-results.json", "path to output OSCAL Assessment Results")
 	BindPluginFlags(fs)
+	BindOSCALFlags(fs)
 
 	return command
 }

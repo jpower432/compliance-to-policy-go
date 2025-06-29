@@ -31,6 +31,7 @@ var (
 					Title:       "etcd_cert_file",
 					Description: "Ensure that the --cert-file argument is set as appropriate",
 					CheckID:     "etcd_cert_file",
+					Requirement: "etcd_cert_file",
 					Methods:     []string{"test_method_1"},
 					Subjects: []policy.Subject{
 						{

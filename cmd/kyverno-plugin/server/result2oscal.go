@@ -108,7 +108,9 @@ func (r *ResultToOscal) GenerateResults() (policy.PVPResult, error) {
 	}
 
 	var observations []policy.ObservationByCheck
-	for _, rule := range r.policy {
+	for _, rule := range r.policy.Rules {
+		// FIXME: This won't work for the Gemara use case.
+		// The app would be expected to know the checks
 		for _, check := range rule.Checks {
 			name := check.ID
 			prrs := r.retrievePolicyReportResults(name)

@@ -14,7 +14,9 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/rules"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/evaluations"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
 const pluginComponentType = "validation"
@@ -35,6 +37,8 @@ type InputContext struct {
 	rulesStore rules.Store
 	// Settings define adjustable rule settings parsed from framework-specific implementation
 	Settings settings.Settings
+	// Applicability defines the profiles for a group a checks
+	Applicability string
 }
 
 // NewContext returns an InputContext for the given OSCAL Components.
@@ -56,6 +60,43 @@ func NewContext(components []components.Component) (*InputContext, error) {
 		return inputCtx, err
 	}
 	inputCtx.rulesStore = store
+	return inputCtx, nil
+}
+
+// NewContextFromPlanRefs returns an InputContext for evaluations.
+func NewContextFromPlanRefs(refs ...policy.PlanRef) (*InputContext, error) {
+	inputCtx := &InputContext{
+		requestedProviders: make(map[plugin.ID]string),
+	}
+	for _, ref := range refs {
+		inputCtx.requestedProviders[plugin.ID(ref.PluginID)] = string(ref.PluginID)
+	}
+	store, err := evaluations.NewPlanRefStore(refs...)
+	if err != nil {
+		return inputCtx, err
+	}
+	inputCtx.rulesStore = store
+	inputCtx.Settings = store.Settings()
+	return inputCtx, nil
+}
+
+// NewContextFromCatalogRefs returns an InputContext for catalogs.
+func NewContextFromCatalogRefs(refs ...policy.CatalogRef) (*InputContext, error) {
+	inputCtx := &InputContext{
+		requestedProviders: make(map[plugin.ID]string),
+	}
+	for _, ref := range refs {
+		for _, plan := range ref.Plans {
+			inputCtx.requestedProviders[plugin.ID(plan.PluginID)] = plan.PluginID
+		}
+
+	}
+	store, err := evaluations.NewCatalogRefStore(refs...)
+	if err != nil {
+		return inputCtx, err
+	}
+	inputCtx.rulesStore = store
+	inputCtx.Settings = store.Settings()
 	return inputCtx, nil
 }
 

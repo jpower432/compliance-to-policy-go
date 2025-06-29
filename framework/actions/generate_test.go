@@ -9,6 +9,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/stretchr/testify/require"
 
@@ -21,7 +22,7 @@ func TestGeneratePolicy(t *testing.T) {
 
 	// Create pluginSet
 	providerTestObj := new(policyProvider)
-	providerTestObj.On("Generate", policy.Policy{expectedCertFileRule}).Return(nil)
+	providerTestObj.On("Generate", policy.Policy{Rules: []extensions.RuleSet{expectedCertFileRule}}).Return(nil)
 	pluginSet := map[plugin.ID]policy.Provider{
 		"mypvpvalidator": providerTestObj,
 	}

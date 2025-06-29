@@ -29,13 +29,12 @@ import (
 
 func NewOSCAL2Policy(logger hclog.Logger) *cobra.Command {
 	options := NewOptions()
-	options.logger = logger
 
 	command := &cobra.Command{
 		Use:   "oscal2policy",
 		Short: "Transform OSCAL to policy artifacts.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := options.Complete(cmd); err != nil {
+			if err := options.Complete(cmd, logger); err != nil {
 				return err
 			}
 			if err := options.Validate(); err != nil {
@@ -45,6 +44,7 @@ func NewOSCAL2Policy(logger hclog.Logger) *cobra.Command {
 		},
 	}
 	BindPluginFlags(command.Flags())
+	BindOSCALFlags(command.Flags())
 	return command
 }
 

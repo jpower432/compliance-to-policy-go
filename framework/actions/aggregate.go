@@ -16,6 +16,8 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
+// Aggregation for auditing
+
 // AggregateResults action identifies policy configuration for each provider in the given pluginSet to execute the GetResults() method
 // each policy.Provider.
 //
@@ -34,7 +36,12 @@ func AggregateResults(ctx context.Context, inputContext *InputContext, pluginSet
 			return allResults, fmt.Errorf("failed to get rule sets for component %s: %w", componentTitle, err)
 		}
 
-		pluginResults, err := policyPlugin.GetResults(appliedRuleSet)
+		policyConfig := policy.Policy{
+			Rules:         appliedRuleSet,
+			Applicability: inputContext.Applicability,
+		}
+
+		pluginResults, err := policyPlugin.GetResults(policyConfig)
 		if err != nil {
 			return allResults, fmt.Errorf("plugin %s: %w", providerId, err)
 		}

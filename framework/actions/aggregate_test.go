@@ -75,7 +75,7 @@ func TestAggregateResults(t *testing.T) {
 
 	// Create pluginSet
 	providerTestObj := new(policyProvider)
-	providerTestObj.On("GetResults", policy.Policy{updatedKeyFileRule}).Return(wantResults, nil)
+	providerTestObj.On("GetResults", policy.Policy{Rules: []extensions.RuleSet{updatedKeyFileRule}}).Return(wantResults, nil)
 	pluginSet := map[plugin.ID]policy.Provider{
 		"mypvpvalidator": providerTestObj,
 	}
@@ -100,16 +100,16 @@ func (p *policyProvider) Configure(option map[string]string) error {
 }
 
 func (p *policyProvider) Generate(policyRules policy.Policy) error {
-	sort.SliceStable(policyRules, func(i, j int) bool {
-		return policyRules[i].Rule.ID > policyRules[j].Rule.ID
+	sort.SliceStable(policyRules.Rules, func(i, j int) bool {
+		return policyRules.Rules[i].Rule.ID > policyRules.Rules[j].Rule.ID
 	})
 	args := p.Called(policyRules)
 	return args.Error(0)
 }
 
 func (p *policyProvider) GetResults(policyRules policy.Policy) (policy.PVPResult, error) {
-	sort.SliceStable(policyRules, func(i, j int) bool {
-		return policyRules[i].Rule.ID > policyRules[j].Rule.ID
+	sort.SliceStable(policyRules.Rules, func(i, j int) bool {
+		return policyRules.Rules[i].Rule.ID > policyRules.Rules[j].Rule.ID
 	})
 	args := p.Called(policyRules)
 	return args.Get(0).(policy.PVPResult), args.Error(1)

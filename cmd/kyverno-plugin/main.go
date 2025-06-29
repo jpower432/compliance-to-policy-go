@@ -23,6 +23,8 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
+// TODO: Consume the rule to check mapping
+
 func main() {
 	kyvernoPlugin := server.NewPlugin()
 	plugins := map[string]hplugin.Plugin{

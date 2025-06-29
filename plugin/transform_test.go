@@ -20,22 +20,17 @@ import (
 var testTimeString, _ = time.Parse("00:00:00", "12:00:00")
 
 var testPolicy = policy.Policy{
-	extensions.RuleSet{
-		Rule: extensions.Rule{
-			ID:          "test-rule-1",
-			Description: "test rule 1",
-			Parameters: []extensions.Parameter{
-				{
-					ID:          "test-param-1",
-					Description: "test param 1",
-					Value:       "test param value",
+	Rules: []extensions.RuleSet{
+		{
+			Rule: extensions.Rule{
+				ID: "test-rule-1",
+				Parameters: []extensions.Parameter{
+					{
+						ID:          "test-param-1",
+						Description: "test param 1",
+						Value:       "test param value",
+					},
 				},
-			},
-		},
-		Checks: []extensions.Check{
-			{
-				ID:          "test-check-1",
-				Description: "test check 1",
 			},
 		},
 	},
@@ -44,14 +39,7 @@ var testPolicy = policy.Policy{
 var testPolicyRequest = &proto.PolicyRequest{
 	Rule: []*proto.Rule{
 		{
-			Name:        "test-rule-1",
-			Description: "test rule 1",
-			Checks: []*proto.Check{
-				{
-					Name:        "test-check-1",
-					Description: "test check 1",
-				},
-			},
+			Name: "test-rule-1",
 			Parameters: []*proto.Parameter{
 				{
 					Name:          "test-param-1",

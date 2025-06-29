@@ -73,11 +73,14 @@ func (c *Composer) Compose(pl policy.Policy, config Config) error {
 	policySetPatches := []typekustomize.Patch{}
 
 	logger.Info("Start generating policy")
-	for idx, ruleObject := range pl {
+	for idx, ruleObject := range pl.Rules {
 		policyListPerControlImple := []string{}
 		for _, prm := range ruleObject.Rule.Parameters {
 			parameters[prm.ID] = prm.Value
 		}
+
+		// FIXME: This won't work for the Gemara use case.
+		// The app would be expected to know the checks
 		for _, check := range ruleObject.Checks {
 			policyId := check.ID
 			sourceDir := fmt.Sprintf("%s/%s", c.policiesDir, check.ID)
