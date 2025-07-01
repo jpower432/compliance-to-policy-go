@@ -75,6 +75,7 @@ type ObservationByCheck struct {
 	Title             string
 	Description       string
 	CheckID           string
+	RequirementID     string
 	Methods           []string
 	Subjects          []Subject
 	Collected         time.Time

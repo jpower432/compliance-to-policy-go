@@ -104,11 +104,12 @@ func NewResultFromProto(pb *proto.PVPResult) policy.PVPResult {
 
 	for _, o := range pb.Observations {
 		observation := policy.ObservationByCheck{
-			Title:       o.Name,
-			Description: o.Description,
-			Methods:     o.Methods,
-			Collected:   o.CollectedAt.AsTime(),
-			CheckID:     o.CheckId,
+			Title:         o.Name,
+			Description:   o.Description,
+			Methods:       o.Methods,
+			Collected:     o.CollectedAt.AsTime(),
+			CheckID:       o.CheckId,
+			RequirementID: o.RequirementId,
 		}
 		var links []policy.Link
 		for _, ref := range o.EvidenceRefs {
@@ -158,11 +159,12 @@ func ResultsToProto(result policy.PVPResult) *proto.PVPResult {
 
 	for _, o := range result.ObservationsByCheck {
 		observation := &proto.ObservationByCheck{
-			Name:        o.Title,
-			Description: o.Description,
-			CheckId:     o.CheckID,
-			Methods:     o.Methods,
-			CollectedAt: timestamppb.New(o.Collected),
+			Name:          o.Title,
+			Description:   o.Description,
+			CheckId:       o.CheckID,
+			RequirementId: o.RequirementID,
+			Methods:       o.Methods,
+			CollectedAt:   timestamppb.New(o.Collected),
 		}
 		var subjects []*proto.Subject
 		for _, s := range o.Subjects {
