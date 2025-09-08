@@ -62,6 +62,10 @@ type AdvancedOptions struct {
 	MaxConcurrency int `yaml:"max-concurrency" mapstructure:"max-concurrency"`
 	// MaxPluginTimeout is maximum time a plugin has to complete operations in minutes.
 	MaxPluginTimeout int `yaml:"max-plugin-timeout" mapstructure:"max-plugin-timeout"`
+	// Optionally forward logs to otel.
+	ForwardLogs   string `yaml:"forward-logs" mapstructure:"forward-logs"`
+	SkipTLS       bool   `yaml:"skip-tls" mapstructure:"skip-tls"`
+	SkipTLSVerify bool   `yaml:"skip-tls-verify" mapstructure:"skip-tls-verify"`
 }
 
 // NewOptions returns an initialized Options struct.
