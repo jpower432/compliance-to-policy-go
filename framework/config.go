@@ -34,6 +34,11 @@ type C2PConfig struct {
 	// Logger is the logging implementation used in the PluginManager and
 	// plugin clients.
 	Logger hclog.Logger
+
+	// Instrumentation options
+	Endpoint      string
+	SkipTLS       bool
+	SkipTLSVerify bool
 }
 
 var defaultLogger = hclog.New(&hclog.LoggerOptions{

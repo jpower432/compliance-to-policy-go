@@ -34,6 +34,10 @@ func Config(option *Options) (*framework.C2PConfig, error) {
 	}
 	// Set logger
 	c2pConfig.Logger = option.logger
+
+	c2pConfig.Endpoint = option.AdvancedOptions.ForwardLogs
+	c2pConfig.SkipTLS = option.AdvancedOptions.SkipTLS
+	c2pConfig.SkipTLSVerify = option.AdvancedOptions.SkipTLSVerify
 	return c2pConfig, nil
 }
 

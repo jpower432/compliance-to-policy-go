@@ -44,7 +44,7 @@ func NewPluginManager(cfg *C2PConfig) (*PluginManager, error) {
 	return &PluginManager{
 		pluginDir:         cfg.PluginDir,
 		pluginManifestDir: cfg.PluginManifestDir,
-		clientFactory:     plugin.ClientFactory(cfg.Logger),
+		clientFactory:     plugin.ClientFactory(cfg.Logger, cfg.Endpoint, cfg.SkipTLS, cfg.SkipTLSVerify),
 		log:               cfg.Logger,
 	}, nil
 }

@@ -18,17 +18,13 @@ package subcommands
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
-
-	"github.com/complytime/complybeacon/proofwatch"
+	"go.opentelemetry.io/otel"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
@@ -62,6 +58,21 @@ func NewResult2OSCAL(logger hclog.Logger) *cobra.Command {
 }
 
 func runResult2Policy(ctx context.Context, option *Options) error {
+	option.logger.Info("Sending evidence to collector")
+	conn, err := newClient(option.AdvancedOptions.ForwardLogs, option.AdvancedOptions.SkipTLS, option.AdvancedOptions.SkipTLSVerify)
+	if err != nil {
+		return fmt.Errorf("failed to create gRPC connection to collector: %w", err)
+	}
+
+	otelShutdown, err := otelSDKSetup(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("error with instrumentation: %w", err)
+	}
+	defer otelShutdown(ctx)
+
+	ctx, span := otel.Tracer("c2p").Start(ctx, "cli")
+	defer span.End()
+
 	frameworkConfig, err := Config(option)
 	if err != nil {
 		return err
@@ -110,44 +121,6 @@ func runResult2Policy(ctx context.Context, option *Options) error {
 
 	oscalModels := oscalTypes.OscalModels{
 		AssessmentResults: assessmentResults,
-	}
-
-	if option.AdvancedOptions.ForwardLogs != "" {
-		option.logger.Info("Sending evidence to collector")
-		conn, err := newClient(option.AdvancedOptions.ForwardLogs, option.AdvancedOptions.SkipTLS, option.AdvancedOptions.SkipTLSVerify)
-		if err != nil {
-			return fmt.Errorf("failed to create gRPC connection to collector: %w", err)
-		}
-
-		otelShutdown, err := otelSDKSetup(ctx, conn)
-		if err != nil {
-			return fmt.Errorf("error with instrumentation: %w", err)
-		}
-		defer otelShutdown(ctx)
-
-		watcher, err := proofwatch.NewProofWatch("c2p", meter)
-		if err != nil {
-			return fmt.Errorf("error setting up wtcher: %w", err)
-		}
-
-		for _, observation := range *assessmentResults.Results[0].Observations {
-			for _, evidence := range *observation.RelevantEvidence {
-				if strings.HasSuffix(evidence.Href, ".ocsf") {
-					option.logger.Debug("found evidence", "path", evidence.Href)
-					var e proofwatch.Evidence
-					evidenceData, err := os.ReadFile(evidence.Href)
-					if err != nil {
-						return err
-					}
-					if err = json.Unmarshal(evidenceData, &e); err != nil {
-						return err
-					}
-					if err = watcher.Log(ctx, e); err != nil {
-						return err
-					}
-				}
-			}
-		}
 	}
 
 	// Validate before writing out

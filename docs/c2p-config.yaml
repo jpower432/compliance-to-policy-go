@@ -15,3 +15,5 @@ plugins:
     output-dir: /tmp/outputs
 advanced:
   max-plugin-timeout: 3
+  forward-logs: 0.0.0.0:4317
+  skip-tls: true

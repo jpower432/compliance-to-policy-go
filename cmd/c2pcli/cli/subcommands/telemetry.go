@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"time"
 
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"google.golang.org/grpc"
@@ -16,18 +16,13 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	olog "go.opentelemetry.io/otel/sdk/log"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-const name = "compliancetopolicy.evidence.count"
-
-var (
-	meter       = otel.Meter(name)
-	serviceName = semconv.ServiceNameKey.String("compliance-to-policy")
-)
+var serviceName = semconv.ServiceNameKey.String("compliance-to-policy")
 
 // otelSDKSetup completes setup of the Otel SDK with providers.
 func otelSDKSetup(ctx context.Context, conn *grpc.ClientConn) (func(context.Context) error, error) {
@@ -50,15 +45,24 @@ func otelSDKSetup(ctx context.Context, conn *grpc.ClientConn) (func(context.Cont
 		return nil, err
 	}
 
-	metricExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithGRPCConn(conn))
+	// --- Start of Tracing Setup ---
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
 	if err != nil {
 		return nil, err
 	}
 
-	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter, sdkmetric.WithInterval(3*time.Second))), sdkmetric.WithResource(res),
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(res),
 	)
-	otel.SetMeterProvider(meterProvider)
+	otel.SetTracerProvider(tracerProvider)
+
+	// And here, we set a global propagator. This is what handles injecting
+	// context into gRPC metadata.
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
 
 	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithGRPCConn(conn))
 	if err != nil {
@@ -71,7 +75,7 @@ func otelSDKSetup(ctx context.Context, conn *grpc.ClientConn) (func(context.Cont
 	// Register the provider as the global logger provider.
 	global.SetLoggerProvider(logProvider)
 
-	shutdownFuncs = append(shutdownFuncs, logProvider.Shutdown, meterProvider.Shutdown)
+	shutdownFuncs = append(shutdownFuncs, logProvider.Shutdown, tracerProvider.Shutdown)
 
 	return shutDown, nil
 }
